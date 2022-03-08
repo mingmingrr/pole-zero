@@ -1,0 +1,60 @@
+body {
+	width:    100vw;
+	height:   100vh;
+	margin:   0;
+	overflow: hidden;
+}
+
+#floaty {
+	position:       absolute;
+	left:           0px;
+	top:            0px;
+	height:         300px;
+	width:          300px;
+	min-height:     150px;
+	min-width:      160px;
+	border:         solid thin black;
+	background:     rgba(255,255,255,0.6);
+	display:        flex;
+	flex-direction: column;
+}
+
+#floaty-bar {
+	background-color: #ddd;
+	user-select:      none;
+	display:          flex;
+	justify-content:  space-between;
+	border-bottom:    solid thin black;
+	padding:          2px;
+}
+
+#floaty-bar > span {
+	margin-left:  5px;
+	margin-right: 5px;
+}
+
+#floaty-left,
+#floaty-right {
+	cursor: pointer;
+}
+
+#floaty-slides {
+	flex:  1;
+	width: 100%;
+	overflow-y: auto;
+}
+
+#floaty-slides > div {
+	display: none;
+}
+
+#floaty-corner {
+  position:     absolute;
+  bottom:       0;
+  right:        0;
+  cursor:       se-resize;
+  border-style: solid;
+  border-width: 0 0 10px 10px;
+  border-color: transparent transparent black transparent;
+}
+

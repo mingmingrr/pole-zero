@@ -4,6 +4,8 @@ import { Complex } from './complex';
 import * as C from './complex';
 import { fft } from './fft';
 import * as F from './fft';
+import { rec } from './rec';
+
 // import * as P from './calculator';
 
 // console.log('fft');
@@ -11,87 +13,193 @@ import * as F from './fft';
 // (window as any).F = F;
 // (window as any).C = C;
 
-class StringValue {
+class ReprValue<a> {
 	constructor(
 		readonly repr:string,
-		readonly value:string,
+		readonly value:a,
 	) {}
 }
 
-type Selection<a> = d3.Selection<a, any, HTMLElement, any>;
-
 const state = {
-	poles: [] as Array<StringValue>,
-	zeros: [] as Array<StringValue>,
+	poles: [] as Array<ReprValue<Complex>>,
+	zeros: [
+		new ReprValue('e^(pi*i/4)', new Complex(Math.SQRT1_2, Math.SQRT1_2)),
+	] as Array<ReprValue<Complex>>,
 	floaty: {
 		position: { x: 0, y: 0 },
-		size: { x: 300, y: 300 },
+		size: { x: 400, y: 400 },
 		slide: 0,
 	},
-	frequency: StringValue,
+	response: {
+		poles: {
+			real: new Float64Array(256),
+			imag: new Float64Array(256),
+			resp: new Float64Array(129),
+		},
+		zeros: {
+			real: new Float64Array(256),
+			imag: new Float64Array(256),
+			resp: new Float64Array(129),
+		},
+		resp : new Float64Array(129),
+	},
+	calc: {
+		poles: function () {},
+		zeros: function () {},
+	},
+	frequency: new ReprValue('pi', new Complex(Math.PI, 0)),
+	gain: new ReprValue('pi', new Complex(Math.PI, 0)),
 	resolution: 256,
-	gain: 1,
 	axis: 'Linear',
 	graph: {
-		polezero: {
+		polezero: rec((rec:any) => ({
 			margin: { top: 0, right: 0, bottom: 0, left: 0 },
-			size: { width: 500, height: 300 },
+			size: { width: 500, height: 300, diameter: 300 },
 			scale: {
-				x: d3.scaleLinear().range([0, 300]).domain([-1.2, 1.2]),
-				y: d3.scaleLinear().range([0, 300]).domain([-1.2, 1.2]),
+				r: d3.scaleLinear().range([0, 300]).domain([0, 1.2]),
+				t: d3.scaleLinear().range([0, 360]).domain([0, 360]),
 			},
-			svg: d3.select('#freq-response').append('svg')
+			svg: d3.select('#pole-zero').append('svg')
 				.attr('width', 570).attr('height', 350),
-			graph: null as Selection<SVGGElement>,
-			axis: {
-				x: null as d3.Selection<SVGGElement, any, HTMLElement, any>,
-				y: null as d3.Selection<SVGGElement, any, HTMLElement, any>,
-			},
-		},
-		response: {
+			graph: rec((rec:any) => rec.svg.append('g').classed('graph', true)
+				.attr('transform', `translate(30, 20)`)),
+			axis: rec((rec:any) => ({
+				r: rec.graph.append('g').classed('r-axis', true),
+				t: rec.graph.append('g').classed('t-axis', true),
+			})),
+			poles: rec((rec:any) => rec.graph.append('g').classed('poles', true)),
+			zeros: rec((rec:any) => rec.graph.append('g').classed('zeros', true)),
+			plot: rec((rec:any) => ({
+				size: function() {
+					let slides = document.getElementById('floaty-slides');
+					let width = slides.clientWidth;
+					let height = slides.clientHeight
+					rec.size.width = width - rec.margin.left - rec.margin.right;
+					rec.size.height = height - rec.margin.top - rec.margin.bottom;
+					rec.size.diameter = Math.min(rec.size.width, rec.size.height);
+					rec.svg.attr('width', width).attr('height', height);
+					rec.graph.attr('transform', `translate(${width/2}, ${height/2})`);
+				},
+				axis: {
+					r: function() {
+						rec.scale.r.range([0, rec.size.diameter / 2]);
+						function update(tick:any) {
+							tick.classed('unit', (x:number) => x == 1);
+							tick.select('circle').attr('r', rec.scale.r);
+							tick.select('text')
+								.attr('y', (n:number) => -rec.scale.r(n))
+								.attr('transform', 'rotate(-15)')
+								.text((n:number) => n);
+						};
+						rec.axis.r.selectAll('.tick')
+							.data(rec.scale.r.ticks(6))
+							.join((enter:any) => {
+								let tick = enter.append('g').classed('tick', true);
+								tick.append('circle');
+								tick.append('text');
+								update(tick);
+							}, update, (exit:any) => exit.remove());
+					},
+					t: function() {
+						function update(tick:any) {
+							tick.select('line').attr('x2', rec.size.diameter / 2);
+						};
+						let ticks = rec.axis.t.selectAll('g')
+							.data(d3.range(0, 360, 30)).join((enter:any) => {
+								let tick = enter.append('g').classed('tick', true)
+									.attr('transform', (d:number) => `rotate(${-d})`);
+								tick.append('line').attr('x1', 8);
+								update(tick);
+							}, update, (exit:any) => exit.remove());
+					}
+				},
+				plot: function() {
+					// rec.path.attr('d', rec.line);
+				},
+			})),
+		})),
+		response: rec((rec:any) => ({
 			margin: { top: 20, right: 20, bottom: 30, left: 50 },
 			size: { width: 500, height: 300 },
 			scale: {
-				x: d3.scaleLinear().range([0, 500]).domain([0, 256]),
+				x: d3.scaleLinear().range([0, 500]).domain([0, 128]),
 				y: d3.scaleLinear().range([300, 0]).domain([0, 4]),
 			},
-			svg: d3.select('#freq-response').append('svg')
-				.attr('width', 570).attr('height', 350),
-			graph: null as d3.Selection<SVGGElement, any, HTMLElement, any>,
-			axis: {
-				x: null as d3.Selection<SVGGElement, any, HTMLElement, any>,
-				y: null as d3.Selection<SVGGElement, any, HTMLElement, any>,
-			},
-			line: null as d3.Line<number>,
-			path: null as Selection<SVGPathElement>,
-		},
+			svg: d3.select('#freq-response').append('svg'),
+			graph: rec((rec:any) => rec.svg.append('g').classed('graph', true)
+				.attr('transform', `translate(30, 20)`)),
+			axis: rec((rec:any) => ({
+				x: rec.graph.append('g').classed('x-axis', true),
+				y: rec.graph.append('g').classed('y-axis', true),
+			})),
+			line: rec((rec:any) => d3.line<number>()
+				.x((n, i) => rec.scale.x(i))
+				.y((n) => rec.scale.y(n))),
+			path: rec((rec:any) => rec.graph.append('path')
+				.datum(state.response.resp)
+				.attr('stroke-width', 1.5)),
+			plot: rec((rec:any) => ({
+				size: function() {
+					let width = window.innerWidth;
+					let height = window.innerHeight
+					rec.size.width = width - rec.margin.left - rec.margin.right;
+					rec.size.height = height - rec.margin.top - rec.margin.bottom;
+					rec.svg.attr('width', width).attr('height', height);
+				},
+				axis: {
+					x: function() {
+						rec.scale.x.range([0, rec.size.width])
+							.domain([0, state.resolution >> 1]);
+						let scale = rec.scale.x.copy()
+							.domain([0, state.frequency.value.real]);
+						rec.axis.x.call(d3.axisBottom(scale)
+							.tickSizeInner(-rec.size.height).tickSizeOuter(0));
+						rec.axis.x.attr('transform', `translate(0, ${rec.size.height})`);
+					},
+					y: function() {
+						let max = [].reduce.call(state.response.resp,
+							(x:number, y:number) => Math.max(x, y));
+						rec.scale.y.range([rec.size.height, 0]).domain([0, max]);
+						rec.axis.y.call(d3.axisLeft(rec.scale.y)
+							.tickSizeInner(-rec.size.width).tickSizeOuter(0));
+					},
+				},
+				plot: function() {
+					rec.path.attr('d', rec.line);
+				},
+			})),
+		})),
 	},
 };
 
-state.graph.response.graph = state.graph.response.svg.append('g')
-	.classed('graph', true)
-	.attr('transform', `translate(30, 20)`);
 
-state.graph.response.axis.x = state.graph.response.graph.append('g')
-	.classed('x-axis', true)
-	.attr('transform', `translate(0, 300)`)
-	.call(d3.axisBottom(state.graph.response.scale.x.copy().domain([0, 1])));
+state.response.poles.real[0] = 1;
+F.fft(256,
+	state.response.poles.real,
+	state.response.poles.imag,
+	state.response.poles.resp);
 
-state.graph.response.axis.y = state.graph.response.graph.append('g')
-	.classed('y-axis', true)
-	.call(d3.axisLeft(state.graph.response.scale.y));
+state.response.zeros.real[0] = 1;
+state.response.zeros.real[1] = -Math.sqrt(2);
+state.response.zeros.real[2] = 1;
+F.fft(256,
+	state.response.zeros.real,
+	state.response.zeros.imag,
+	state.response.zeros.resp);
 
-state.graph.response.line = d3.line<number>()
-	.x((n, i) => state.graph.response.scale.x(i))
-	.y((n) => state.graph.response.scale.y(n));
+for(let i = 0; i < 129; ++i)
+	state.response.resp[i] =
+		state.response.zeros.resp[i] / state.response.poles.resp[i];
 
-state.graph.response.path = state.graph.response.graph.append('path')
-	.datum(data)
-	.attr('fill', 'none')
-	.attr('stroke', 'steelblue')
-	.attr('stroke-width', 1.5)
-	.attr('d', line);
+state.graph.polezero.plot.size();
+state.graph.polezero.plot.axis.r();
+state.graph.polezero.plot.axis.t();
+state.graph.polezero.plot.plot();
 
+state.graph.response.plot.size();
+state.graph.response.plot.axis.x();
+state.graph.response.plot.axis.y();
+state.graph.response.plot.plot();
 
 function drag(elem:HTMLElement,
 	posn:{x:number,y:number},
@@ -133,6 +241,10 @@ drag(document.getElementById('floaty-corner'), state.floaty.size, function(event
 	let elem = document.getElementById('floaty');
 	elem.style.width = x + 'px';
 	elem.style.height = y + 'px';
+	state.graph.polezero.plot.size();
+	state.graph.polezero.plot.axis.r();
+	state.graph.polezero.plot.axis.t();
+	state.graph.polezero.plot.plot();
 }, function(event, posn) {
 	posn.x = Math.max(150, posn.x);
 	posn.y = Math.max(150, posn.y);
@@ -146,8 +258,8 @@ const slideTitle : Record<string, string> = {
 };
 
 function slideSwitch(n:number) {
-	const slides = Array.from(document.getElementById('floaty-slides')
-		.children) as Array<HTMLElement>;
+	const container = document.getElementById('floaty-slides');
+	const slides = Array.from(container.children) as Array<HTMLElement>;
 	slides[state.floaty.slide].style.display = '';
 	state.floaty.slide = (n + slides.length) % slides.length;
 	slides[state.floaty.slide].style.display = 'unset';
@@ -162,11 +274,6 @@ for(let icon of [{name:'floaty-left', move:-1}, {name:'floaty-right', move:1}]) 
 		slideSwitch(state.floaty.slide + icon.move);
 	});
 }
-
-let xs = Array(256).fill(0);
-xs[0] = xs[2] = 1;
-xs[1] = -Math.sqrt(2);
-let data = F.fft(256, xs, Array(256).fill(0));
 
 function trace(...xs:any) {
 	console.log(...xs);

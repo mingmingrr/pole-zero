@@ -9,8 +9,8 @@ body {
 	position:       absolute;
 	left:           0px;
 	top:            0px;
-	height:         300px;
-	width:          300px;
+	height:         400px;
+	width:          400px;
 	min-height:     150px;
 	min-width:      160px;
 	border:         solid thin black;
@@ -20,6 +20,7 @@ body {
 }
 
 #floaty-bar {
+	cursor:           move;
 	background-color: #ddd;
 	user-select:      none;
 	display:          flex;
@@ -41,20 +42,69 @@ body {
 #floaty-slides {
 	flex:  1;
 	width: 100%;
-	overflow-y: auto;
+	overflow: hidden;
 }
 
 #floaty-slides > div {
 	display: none;
 }
 
-#floaty-corner {
-  position:     absolute;
-  bottom:       0;
-  right:        0;
-  cursor:       se-resize;
-  border-style: solid;
-  border-width: 0 0 10px 10px;
-  border-color: transparent transparent black transparent;
+#slide-options > div {
+	height:     100%;
+	overflow-y: auto;
 }
+
+#floaty-corner {
+	position:     absolute;
+	bottom:       0;
+	right:        0;
+	cursor:       se-resize;
+	border-style: solid;
+	border-width: 0 0 10px 10px;
+	border-color: transparent transparent black transparent;
+}
+
+svg .tick > line {
+	stroke: lightgrey;
+}
+
+svg .tick:first-of-type > line {
+	display: none;
+}
+
+svg .y-axis .tick:first-of-type > text {
+	display: none;
+}
+
+svg .graph > path {
+	fill: none;
+	stroke: steelblue;
+}
+
+svg .r-axis .tick > circle {
+	fill: none;
+	stroke: lightgrey;
+	stroke-dasharray: 4;
+}
+
+svg .r-axis .tick.unit > circle {
+	stroke: grey;
+	stroke-dasharray: none;
+}
+
+svg .r-axis .tick > text {
+	color: grey;
+	font-size: 9pt;
+	text-anchor: middle;
+}
+
+svg .r-axis .tick:first-of-type > text {
+	display: none;
+}
+
+svg .t-axis .tick > line {
+	stroke: lightgrey;
+	stroke-dasharray: 4;
+}
+
 

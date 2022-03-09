@@ -43,6 +43,10 @@ export function polynomial(
 			real[j] += roots[i].real * real[j-1] - roots[i].imag * imag[j-1];
 			imag[j] += roots[i].real * imag[j-1] + roots[i].imag * real[j-1];
 		}
+	for(let i = 0, j = roots.length; i < j; ++i, --j) {
+		[real[i], real[j]] = [real[j], real[i]];
+		[imag[i], imag[j]] = [imag[j], imag[i]];
+	}
 }
 
 // (mostly) in-place dif
@@ -57,11 +61,10 @@ export function fft(size:number,
 		new ArrayView((sin as any), 0, 8192 / size),
 		new ArrayView((sin as any), 2048, 8192 / size));
 	let bits = 16 - Math.round(Math.log2(size));
-	size = (size >> 1) + 1;
-	// let out = new Float64Array(size);
-	for(let i = 0; i < size; ++i) {
+	for(let i = 0; i < out.length; ++i) {
 		let j = reverse16(i) >>> bits;
-		out[i] = Math.hypot(real[j], imag[j]);
+		out[out.length - 1 - i] =
+			Math.hypot(real[j], imag[j]);
 	}
 }
 

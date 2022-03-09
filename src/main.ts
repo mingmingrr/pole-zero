@@ -1,17 +1,10 @@
 import * as d3 from 'd3';
 
-import { Complex } from './complex';
 import * as C from './complex';
-import { fft } from './fft';
-import * as F from './fft';
+import { Complex } from './complex';
+import { polynomial, fft } from './fft';
 import { rec } from './rec';
-
-// import * as P from './calculator';
-
-// console.log('fft');
-// (window as any).parse = P.calculate;
-// (window as any).F = F;
-// (window as any).C = C;
+import { calculate } from './calculator';
 
 class ReprValue<a> {
 	constructor(
@@ -23,7 +16,7 @@ class ReprValue<a> {
 const state = {
 	poles: [] as Array<ReprValue<Complex>>,
 	zeros: [
-		new ReprValue('e^(pi*i/4)', new Complex(Math.SQRT1_2, Math.SQRT1_2)),
+		new ReprValue('e^(pi*i/4)', new Complex(Math.SQRT1_2, Math.SQRT1_2 / 2)),
 	] as Array<ReprValue<Complex>>,
 	floaty: {
 		position: { x: 0, y: 0 },
@@ -44,15 +37,33 @@ const state = {
 		resp : new Float64Array(129),
 	},
 	calc: {
-		poles: function () {},
-		zeros: function () {},
+		run: function(roots:Array<ReprValue<Complex>>, response:{
+			real:Float64Array, imag:Float64Array, resp:Float64Array
+		}) : void {
+			response.real.fill(0);
+			response.imag.fill(0);
+			let roots$ = roots.map((x:ReprValue<Complex>) => x.value.imag == 0
+				? x.value : [x.value, C.conjugate(x.value)]).flat();
+			polynomial(roots$, response.real, response.imag);
+			console.log('real', Array.from(response.real));
+			console.log('imag', Array.from(response.imag));
+			fft(state.option.resolution,
+				response.real, response.imag, response.resp);
+			for(let i = 0; i < 129; ++i)
+				state.response.resp[i] = C.abs(state.option.gain.value).real *
+					state.response.zeros.resp[i] / state.response.poles.resp[i];
+		},
+		poles: () => state.calc.run(state.poles, state.response.poles),
+		zeros: () => state.calc.run(state.zeros, state.response.zeros),
 	},
-	frequency: new ReprValue('pi', new Complex(Math.PI, 0)),
-	gain: new ReprValue('pi', new Complex(Math.PI, 0)),
-	resolution: 256,
-	axis: 'Linear',
+	option: {
+		frequency: new ReprValue('pi', new Complex(Math.PI, 0)),
+		gain: new ReprValue('pi', new Complex(Math.PI, 0)),
+		resolution: 256,
+		axis: 'Linear',
+	},
 	graph: {
-		polezero: rec((rec:any) => ({
+		polezero: rec((pz$:any) => ({
 			margin: { top: 0, right: 0, bottom: 0, left: 0 },
 			size: { width: 500, height: 300, diameter: 300 },
 			scale: {
@@ -61,38 +72,38 @@ const state = {
 			},
 			svg: d3.select('#pole-zero').append('svg')
 				.attr('width', 570).attr('height', 350),
-			graph: rec((rec:any) => rec.svg.append('g').classed('graph', true)
+			graph: pz$((pz$$:any) => pz$$.svg.append('g').classed('graph', true)
 				.attr('transform', `translate(30, 20)`)),
-			axis: rec((rec:any) => ({
-				r: rec.graph.append('g').classed('r-axis', true),
-				t: rec.graph.append('g').classed('t-axis', true),
+			axis: pz$((pz$$:any) => ({
+				r: pz$$.graph.append('g').classed('r-axis', true),
+				t: pz$$.graph.append('g').classed('t-axis', true),
 			})),
-			poles: rec((rec:any) => rec.graph.append('g').classed('poles', true)),
-			zeros: rec((rec:any) => rec.graph.append('g').classed('zeros', true)),
-			plot: rec((rec:any) => ({
+			poles: pz$((pz$$:any) => pz$$.graph.append('g').classed('poles', true)),
+			zeros: pz$((pz$$:any) => pz$$.graph.append('g').classed('zeros', true)),
+			plot: pz$((pz$$:any) => ({
 				size: function() {
 					let slides = document.getElementById('floaty-slides');
 					let width = slides.clientWidth;
 					let height = slides.clientHeight
-					rec.size.width = width - rec.margin.left - rec.margin.right;
-					rec.size.height = height - rec.margin.top - rec.margin.bottom;
-					rec.size.diameter = Math.min(rec.size.width, rec.size.height);
-					rec.svg.attr('width', width).attr('height', height);
-					rec.graph.attr('transform', `translate(${width/2}, ${height/2})`);
+					pz$$.size.width = width - pz$$.margin.left - pz$$.margin.right;
+					pz$$.size.height = height - pz$$.margin.top - pz$$.margin.bottom;
+					pz$$.size.diameter = Math.min(pz$$.size.width, pz$$.size.height);
+					pz$$.svg.attr('width', width).attr('height', height);
+					pz$$.graph.attr('transform', `translate(${width/2}, ${height/2})`);
 				},
 				axis: {
 					r: function() {
-						rec.scale.r.range([0, rec.size.diameter / 2]);
+						pz$$.scale.r.range([0, pz$$.size.diameter / 2]);
 						function update(tick:any) {
 							tick.classed('unit', (x:number) => x == 1);
-							tick.select('circle').attr('r', rec.scale.r);
+							tick.select('circle').attr('r', pz$$.scale.r);
 							tick.select('text')
-								.attr('y', (n:number) => -rec.scale.r(n))
+								.attr('y', (n:number) => -pz$$.scale.r(n))
 								.attr('transform', 'rotate(-15)')
 								.text((n:number) => n);
 						};
-						rec.axis.r.selectAll('.tick')
-							.data(rec.scale.r.ticks(6))
+						pz$$.axis.r.selectAll('.tick')
+							.data(pz$$.scale.r.ticks(6))
 							.join((enter:any) => {
 								let tick = enter.append('g').classed('tick', true);
 								tick.append('circle');
@@ -102,9 +113,9 @@ const state = {
 					},
 					t: function() {
 						function update(tick:any) {
-							tick.select('line').attr('x2', rec.size.diameter / 2);
+							tick.select('line').attr('x2', pz$$.size.diameter / 2);
 						};
-						let ticks = rec.axis.t.selectAll('g')
+						let ticks = pz$$.axis.t.selectAll('g')
 							.data(d3.range(0, 360, 30)).join((enter:any) => {
 								let tick = enter.append('g').classed('tick', true)
 									.attr('transform', (d:number) => `rotate(${-d})`);
@@ -114,11 +125,11 @@ const state = {
 					}
 				},
 				plot: function() {
-					// rec.path.attr('d', rec.line);
+					// pz$$.path.attr('d', pz$$.line);
 				},
 			})),
 		})),
-		response: rec((rec:any) => ({
+		response: rec((pz$:any) => ({
 			margin: { top: 20, right: 20, bottom: 30, left: 50 },
 			size: { width: 500, height: 300 },
 			scale: {
@@ -126,70 +137,61 @@ const state = {
 				y: d3.scaleLinear().range([300, 0]).domain([0, 4]),
 			},
 			svg: d3.select('#freq-response').append('svg'),
-			graph: rec((rec:any) => rec.svg.append('g').classed('graph', true)
+			graph: pz$((pz$$:any) => pz$$.svg.append('g').classed('graph', true)
 				.attr('transform', `translate(30, 20)`)),
-			axis: rec((rec:any) => ({
-				x: rec.graph.append('g').classed('x-axis', true),
-				y: rec.graph.append('g').classed('y-axis', true),
+			axis: pz$((pz$$:any) => ({
+				x: pz$$.graph.append('g').classed('x-axis', true),
+				y: pz$$.graph.append('g').classed('y-axis', true),
 			})),
-			line: rec((rec:any) => d3.line<number>()
-				.x((n, i) => rec.scale.x(i))
-				.y((n) => rec.scale.y(n))),
-			path: rec((rec:any) => rec.graph.append('path')
+			line: pz$((pz$$:any) => d3.line<number>()
+				.x((n, i) => pz$$.scale.x(i))
+				.y((n) => pz$$.scale.y(n))),
+			path: pz$((pz$$:any) => pz$$.graph.append('path')
 				.datum(state.response.resp)
 				.attr('stroke-width', 1.5)),
-			plot: rec((rec:any) => ({
+			plot: pz$((pz$$:any) => ({
 				size: function() {
 					let width = window.innerWidth;
 					let height = window.innerHeight
-					rec.size.width = width - rec.margin.left - rec.margin.right;
-					rec.size.height = height - rec.margin.top - rec.margin.bottom;
-					rec.svg.attr('width', width).attr('height', height);
+					pz$$.size.width = width - pz$$.margin.left - pz$$.margin.right;
+					pz$$.size.height = height - pz$$.margin.top - pz$$.margin.bottom;
+					pz$$.svg.attr('width', width).attr('height', height);
 				},
 				axis: {
 					x: function() {
-						rec.scale.x.range([0, rec.size.width])
-							.domain([0, state.resolution >> 1]);
-						let scale = rec.scale.x.copy()
-							.domain([0, state.frequency.value.real]);
-						rec.axis.x.call(d3.axisBottom(scale)
-							.tickSizeInner(-rec.size.height).tickSizeOuter(0));
-						rec.axis.x.attr('transform', `translate(0, ${rec.size.height})`);
+						pz$$.scale.x.range([0, pz$$.size.width])
+							.domain([0, state.option.resolution >> 1]);
+						let scale = pz$$.scale.x.copy()
+							.domain([0, state.option.frequency.value.real]);
+						pz$$.axis.x.call(d3.axisBottom(scale)
+							.tickSizeInner(-pz$$.size.height).tickSizeOuter(0));
+						pz$$.axis.x.attr('transform', `translate(0, ${pz$$.size.height})`);
 					},
 					y: function() {
 						let max = [].reduce.call(state.response.resp,
 							(x:number, y:number) => Math.max(x, y));
-						rec.scale.y.range([rec.size.height, 0]).domain([0, max]);
-						rec.axis.y.call(d3.axisLeft(rec.scale.y)
-							.tickSizeInner(-rec.size.width).tickSizeOuter(0));
+						pz$$.scale.y.range([pz$$.size.height, 0]).domain([0, max]);
+						pz$$.axis.y.call(d3.axisLeft(pz$$.scale.y)
+							.tickSizeInner(-pz$$.size.width).tickSizeOuter(0));
 					},
 				},
 				plot: function() {
-					rec.path.attr('d', rec.line);
+					pz$$.path.attr('d', pz$$.line);
 				},
 			})),
 		})),
 	},
 };
 
+state.response.zeros.real[0] = 1;
+state.response.zeros.real[0] = 0;
+state.response.zeros.resp.fill(1);
 
 state.response.poles.real[0] = 1;
-F.fft(256,
-	state.response.poles.real,
-	state.response.poles.imag,
-	state.response.poles.resp);
+state.response.poles.real[0] = 0;
+state.response.poles.resp.fill(1);
 
-state.response.zeros.real[0] = 1;
-state.response.zeros.real[1] = -Math.sqrt(2);
-state.response.zeros.real[2] = 1;
-F.fft(256,
-	state.response.zeros.real,
-	state.response.zeros.imag,
-	state.response.zeros.resp);
-
-for(let i = 0; i < 129; ++i)
-	state.response.resp[i] =
-		state.response.zeros.resp[i] / state.response.poles.resp[i];
+state.calc.zeros();
 
 state.graph.polezero.plot.size();
 state.graph.polezero.plot.axis.r();

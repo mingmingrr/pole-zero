@@ -20,6 +20,14 @@ export function polar(x:Complex) : Polar {
   return new Polar(Math.hypot(x.real, x.imag), Math.atan2(x.imag, x.real));
 }
 
+export function abs(x:Complex) : Complex {
+  return new Complex(Math.hypot(x.real, x.imag), 0);
+}
+
+export function conjugate(x:Complex) : Complex {
+  return new Complex(x.real, -x.imag);
+}
+
 export function negate(x:Complex) : Complex {
   return new Complex(-x.real, -x.imag);
 }

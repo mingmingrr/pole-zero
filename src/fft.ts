@@ -29,40 +29,40 @@ export function reverse16(x:number) : number {
 	return x;
 }
 
-export function polynomial(roots:Array<Complex>)
-: {real:Float64Array, imag:Float64Array} {
-	let real = new Float64Array(roots.length + 1);
-	let imag = new Float64Array(roots.length + 1);
+export function polynomial(
+	roots:Array<Complex>,
+	real:Float64Array,
+	imag:Float64Array,
+) : void {
+	// let real = new Float64Array{roots.length + 1};
+	// let imag = new Float64Array(roots.length + 1);
 	real[0] = 1;
+	imag[0] = 0;
 	for(let i = 0; i < roots.length; ++i)
 		for(let j = i + 1; j > 0; --j) {
 			real[j] += roots[i].real * real[j-1] - roots[i].imag * imag[j-1];
 			imag[j] += roots[i].real * imag[j-1] + roots[i].imag * real[j-1];
 		}
-	return {real, imag};
 }
 
 // (mostly) in-place dif
 export function fft(size:number,
-	real:Array<number>, imag:Array<number>,
-) : Float64Array {
-	let realN = new Float64Array(size);
-	let imagN = new Float64Array(size);
-	realN.set(real);
-	imagN.set(imag);
+	real:Float64Array,
+	imag:Float64Array,
+	out:Float64Array,
+) : void {
 	fftN(size,
-		new ArrayView((realN as any), 0, 1),
-		new ArrayView((imagN as any), 0, 1),
+		new ArrayView((real as any), 0, 1),
+		new ArrayView((imag as any), 0, 1),
 		new ArrayView((sin as any), 0, 8192 / size),
 		new ArrayView((sin as any), 2048, 8192 / size));
 	let bits = 16 - Math.round(Math.log2(size));
 	size = (size >> 1) + 1;
-	let out = new Float64Array(size);
+	// let out = new Float64Array(size);
 	for(let i = 0; i < size; ++i) {
 		let j = reverse16(i) >>> bits;
-		out[i] = Math.hypot(realN[j], imagN[j]);
+		out[i] = Math.hypot(real[j], imag[j]);
 	}
-	return out;
 }
 
 export function fft4(real:ArrayView<number>, imag:ArrayView<number>) : void {

@@ -20,7 +20,7 @@ body {
 }
 
 #floaty-bar {
-	cursor:           move;
+	cursor:           grab;
 	background-color: #ddd;
 	user-select:      none;
 	display:          flex;
@@ -68,7 +68,8 @@ svg .tick > line {
 	stroke: lightgrey;
 }
 
-svg .tick:first-of-type > line {
+svg .x-axis .tick:first-of-type > line,
+svg .y-axis .tick:first-of-type > line {
 	display: none;
 }
 
@@ -107,4 +108,18 @@ svg .t-axis .tick > line {
 	stroke-dasharray: 4;
 }
 
+svg .point {
+	cursor: grab;
+}
 
+svg .poles .point circle {
+	fill: salmon;
+}
+
+svg .zeros .point circle {
+	fill: steelblue;
+}
+
+#pole-zero {
+	cursor: crosshair;
+}

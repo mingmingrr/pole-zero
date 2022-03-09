@@ -13,10 +13,18 @@ class ReprValue<a> {
 	) {}
 }
 
+function closeto(x:number, y:number) : boolean {
+	return Math.abs(x - y) < 1e-9;
+}
+
+function conjugates(xs:Array<ReprValue<Complex>>) : Array<Complex> {
+	return xs.map(({value}) => closeto(value.imag, 0) ?
+		[value] : [value, C.conj(value)]).flat();
+}
 const state = {
 	poles: [] as Array<ReprValue<Complex>>,
 	zeros: [
-		new ReprValue('e^(pi*i/4)', new Complex(Math.SQRT1_2, Math.SQRT1_2 / 2)),
+		new ReprValue('e^(pi*i/4)', new Complex(Math.SQRT1_2, Math.SQRT1_2)),
 	] as Array<ReprValue<Complex>>,
 	floaty: {
 		position: { x: 0, y: 0 },
@@ -42,11 +50,8 @@ const state = {
 		}) : void {
 			response.real.fill(0);
 			response.imag.fill(0);
-			let roots$ = roots.map((x:ReprValue<Complex>) => x.value.imag == 0
-				? x.value : [x.value, C.conjugate(x.value)]).flat();
-			polynomial(roots$, response.real, response.imag);
-			console.log('real', Array.from(response.real));
-			console.log('imag', Array.from(response.imag));
+			polynomial(conjugates(roots),
+				response.real, response.imag);
 			fft(state.option.resolution,
 				response.real, response.imag, response.resp);
 			for(let i = 0; i < 129; ++i)
@@ -124,12 +129,28 @@ const state = {
 							}, update, (exit:any) => exit.remove());
 					}
 				},
-				plot: function() {
-					// pz$$.path.attr('d', pz$$.line);
+				plot: {
+					run: function(roots:Array<ReprValue<Complex>>, group:any, create:any) {
+						function update(group:any) {
+							group.attr('transform', (d:ReprValue<Complex>) =>
+								`translate(${pz$$.scale.r(d.real)}, ${-pz$$.scale.r(d.imag)})`);
+						}
+						group.selectAll('.root')
+							.data(roots)
+							.join((enter:any) => {
+								let group = enter.append('g').classed('point', true);
+								let point = group.selectAll('g').data((d) => conjugates(d));
+								update(point);
+							}, update, (exit:any) => exit.remove());
+					},
+					poles: () => pz$$.plot.plot.run(state.poles, pz$$.poles,
+						(point:any) => point.append('circle').attr('r', 5)),
+					zeros: () => pz$$.plot.plot.run(state.zeros, pz$$.zeros,
+						(point:any) => point.append('circle').attr('r', 5)),
 				},
 			})),
 		})),
-		response: rec((pz$:any) => ({
+		response: rec((pz$:number) => ({
 			margin: { top: 20, right: 20, bottom: 30, left: 50 },
 			size: { width: 500, height: 300 },
 			scale: {
@@ -196,7 +217,8 @@ state.calc.zeros();
 state.graph.polezero.plot.size();
 state.graph.polezero.plot.axis.r();
 state.graph.polezero.plot.axis.t();
-state.graph.polezero.plot.plot();
+state.graph.polezero.plot.plot.zeros();
+state.graph.polezero.plot.plot.poles();
 
 state.graph.response.plot.size();
 state.graph.response.plot.axis.x();
@@ -246,7 +268,8 @@ drag(document.getElementById('floaty-corner'), state.floaty.size, function(event
 	state.graph.polezero.plot.size();
 	state.graph.polezero.plot.axis.r();
 	state.graph.polezero.plot.axis.t();
-	state.graph.polezero.plot.plot();
+	state.graph.polezero.plot.plot.poles();
+	state.graph.polezero.plot.plot.zeros();
 }, function(event, posn) {
 	posn.x = Math.max(150, posn.x);
 	posn.y = Math.max(150, posn.y);

@@ -24,7 +24,7 @@ export function abs(x:Complex) : Complex {
   return new Complex(Math.hypot(x.real, x.imag), 0);
 }
 
-export function conjugate(x:Complex) : Complex {
+export function conj(x:Complex) : Complex {
   return new Complex(x.real, -x.imag);
 }
 

@@ -16,7 +16,7 @@ const function1 : Map<string, (x:Complex)=>Complex> = new Map(Object.entries({
 	'+':  (x) => x,
 	'-':  C.negate,
 	abs:  C.abs,
-	conj: C.conjugate,
+	conj: C.conj,
 	sin:  C.sin,
 	cos:  C.cos,
 	tan:  C.tan,

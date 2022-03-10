@@ -1,229 +1,22 @@
 import * as d3 from 'd3';
 
+import * as S from './state';
+import { Roots } from './state';
 import * as C from './complex';
 import { Complex } from './complex';
 import { polynomial, fft } from './fft';
 import { rec } from './rec';
 import { calculate } from './calculator';
+import { ReprValue } from './util';
+import * as R from './response';
 
-class ReprValue<a> {
-	constructor(
-		readonly repr:string,
-		readonly value:a,
-	) {}
-}
+S.calculate(S.poles);
+S.calculate(S.zeros);
 
-function closeto(x:number, y:number) : boolean {
-	return Math.abs(x - y) < 1e-9;
-}
-
-function conjugates(xs:Array<ReprValue<Complex>>) : Array<Complex> {
-	return xs.map(({value}) => closeto(value.imag, 0) ?
-		[value] : [value, C.conj(value)]).flat();
-}
-const state = {
-	poles: [] as Array<ReprValue<Complex>>,
-	zeros: [
-		new ReprValue('e^(pi*i/4)', new Complex(Math.SQRT1_2, Math.SQRT1_2)),
-	] as Array<ReprValue<Complex>>,
-	floaty: {
-		position: { x: 0, y: 0 },
-		size: { x: 400, y: 400 },
-		slide: 0,
-	},
-	response: {
-		poles: {
-			real: new Float64Array(256),
-			imag: new Float64Array(256),
-			resp: new Float64Array(129),
-		},
-		zeros: {
-			real: new Float64Array(256),
-			imag: new Float64Array(256),
-			resp: new Float64Array(129),
-		},
-		resp : new Float64Array(129),
-	},
-	calc: {
-		run: function(roots:Array<ReprValue<Complex>>, response:{
-			real:Float64Array, imag:Float64Array, resp:Float64Array
-		}) : void {
-			response.real.fill(0);
-			response.imag.fill(0);
-			polynomial(conjugates(roots),
-				response.real, response.imag);
-			fft(state.option.resolution,
-				response.real, response.imag, response.resp);
-			for(let i = 0; i < 129; ++i)
-				state.response.resp[i] = C.abs(state.option.gain.value).real *
-					state.response.zeros.resp[i] / state.response.poles.resp[i];
-		},
-		poles: () => state.calc.run(state.poles, state.response.poles),
-		zeros: () => state.calc.run(state.zeros, state.response.zeros),
-	},
-	option: {
-		frequency: new ReprValue('pi', new Complex(Math.PI, 0)),
-		gain: new ReprValue('pi', new Complex(Math.PI, 0)),
-		resolution: 256,
-		axis: 'Linear',
-	},
-	graph: {
-		polezero: rec((pz$:any) => ({
-			margin: { top: 0, right: 0, bottom: 0, left: 0 },
-			size: { width: 500, height: 300, diameter: 300 },
-			scale: {
-				r: d3.scaleLinear().range([0, 300]).domain([0, 1.2]),
-				t: d3.scaleLinear().range([0, 360]).domain([0, 360]),
-			},
-			svg: d3.select('#pole-zero').append('svg')
-				.attr('width', 570).attr('height', 350),
-			graph: pz$((pz$$:any) => pz$$.svg.append('g').classed('graph', true)
-				.attr('transform', `translate(30, 20)`)),
-			axis: pz$((pz$$:any) => ({
-				r: pz$$.graph.append('g').classed('r-axis', true),
-				t: pz$$.graph.append('g').classed('t-axis', true),
-			})),
-			poles: pz$((pz$$:any) => pz$$.graph.append('g').classed('poles', true)),
-			zeros: pz$((pz$$:any) => pz$$.graph.append('g').classed('zeros', true)),
-			plot: pz$((pz$$:any) => ({
-				size: function() {
-					let slides = document.getElementById('floaty-slides');
-					let width = slides.clientWidth;
-					let height = slides.clientHeight
-					pz$$.size.width = width - pz$$.margin.left - pz$$.margin.right;
-					pz$$.size.height = height - pz$$.margin.top - pz$$.margin.bottom;
-					pz$$.size.diameter = Math.min(pz$$.size.width, pz$$.size.height);
-					pz$$.svg.attr('width', width).attr('height', height);
-					pz$$.graph.attr('transform', `translate(${width/2}, ${height/2})`);
-				},
-				axis: {
-					r: function() {
-						pz$$.scale.r.range([0, pz$$.size.diameter / 2]);
-						function update(tick:any) {
-							tick.classed('unit', (x:number) => x == 1);
-							tick.select('circle').attr('r', pz$$.scale.r);
-							tick.select('text')
-								.attr('y', (n:number) => -pz$$.scale.r(n))
-								.attr('transform', 'rotate(-15)')
-								.text((n:number) => n);
-						};
-						pz$$.axis.r.selectAll('.tick')
-							.data(pz$$.scale.r.ticks(6))
-							.join((enter:any) => {
-								let tick = enter.append('g').classed('tick', true);
-								tick.append('circle');
-								tick.append('text');
-								update(tick);
-							}, update, (exit:any) => exit.remove());
-					},
-					t: function() {
-						function update(tick:any) {
-							tick.select('line').attr('x2', pz$$.size.diameter / 2);
-						};
-						let ticks = pz$$.axis.t.selectAll('g')
-							.data(d3.range(0, 360, 30)).join((enter:any) => {
-								let tick = enter.append('g').classed('tick', true)
-									.attr('transform', (d:number) => `rotate(${-d})`);
-								tick.append('line').attr('x1', 8);
-								update(tick);
-							}, update, (exit:any) => exit.remove());
-					}
-				},
-				plot: {
-					run: function(roots:Array<ReprValue<Complex>>, group:any, create:any) {
-						function update(group:any) {
-							group.attr('transform', (d:ReprValue<Complex>) =>
-								`translate(${pz$$.scale.r(d.real)}, ${-pz$$.scale.r(d.imag)})`);
-						}
-						group.selectAll('.root')
-							.data(roots)
-							.join((enter:any) => {
-								let group = enter.append('g').classed('point', true);
-								let point = group.selectAll('g').data((d) => conjugates(d));
-								update(point);
-							}, update, (exit:any) => exit.remove());
-					},
-					poles: () => pz$$.plot.plot.run(state.poles, pz$$.poles,
-						(point:any) => point.append('circle').attr('r', 5)),
-					zeros: () => pz$$.plot.plot.run(state.zeros, pz$$.zeros,
-						(point:any) => point.append('circle').attr('r', 5)),
-				},
-			})),
-		})),
-		response: rec((pz$:number) => ({
-			margin: { top: 20, right: 20, bottom: 30, left: 50 },
-			size: { width: 500, height: 300 },
-			scale: {
-				x: d3.scaleLinear().range([0, 500]).domain([0, 128]),
-				y: d3.scaleLinear().range([300, 0]).domain([0, 4]),
-			},
-			svg: d3.select('#freq-response').append('svg'),
-			graph: pz$((pz$$:any) => pz$$.svg.append('g').classed('graph', true)
-				.attr('transform', `translate(30, 20)`)),
-			axis: pz$((pz$$:any) => ({
-				x: pz$$.graph.append('g').classed('x-axis', true),
-				y: pz$$.graph.append('g').classed('y-axis', true),
-			})),
-			line: pz$((pz$$:any) => d3.line<number>()
-				.x((n, i) => pz$$.scale.x(i))
-				.y((n) => pz$$.scale.y(n))),
-			path: pz$((pz$$:any) => pz$$.graph.append('path')
-				.datum(state.response.resp)
-				.attr('stroke-width', 1.5)),
-			plot: pz$((pz$$:any) => ({
-				size: function() {
-					let width = window.innerWidth;
-					let height = window.innerHeight
-					pz$$.size.width = width - pz$$.margin.left - pz$$.margin.right;
-					pz$$.size.height = height - pz$$.margin.top - pz$$.margin.bottom;
-					pz$$.svg.attr('width', width).attr('height', height);
-				},
-				axis: {
-					x: function() {
-						pz$$.scale.x.range([0, pz$$.size.width])
-							.domain([0, state.option.resolution >> 1]);
-						let scale = pz$$.scale.x.copy()
-							.domain([0, state.option.frequency.value.real]);
-						pz$$.axis.x.call(d3.axisBottom(scale)
-							.tickSizeInner(-pz$$.size.height).tickSizeOuter(0));
-						pz$$.axis.x.attr('transform', `translate(0, ${pz$$.size.height})`);
-					},
-					y: function() {
-						let max = [].reduce.call(state.response.resp,
-							(x:number, y:number) => Math.max(x, y));
-						pz$$.scale.y.range([pz$$.size.height, 0]).domain([0, max]);
-						pz$$.axis.y.call(d3.axisLeft(pz$$.scale.y)
-							.tickSizeInner(-pz$$.size.width).tickSizeOuter(0));
-					},
-				},
-				plot: function() {
-					pz$$.path.attr('d', pz$$.line);
-				},
-			})),
-		})),
-	},
-};
-
-state.response.zeros.real[0] = 1;
-state.response.zeros.real[0] = 0;
-state.response.zeros.resp.fill(1);
-
-state.response.poles.real[0] = 1;
-state.response.poles.real[0] = 0;
-state.response.poles.resp.fill(1);
-
-state.calc.zeros();
-
-state.graph.polezero.plot.size();
-state.graph.polezero.plot.axis.r();
-state.graph.polezero.plot.axis.t();
-state.graph.polezero.plot.plot.zeros();
-state.graph.polezero.plot.plot.poles();
-
-state.graph.response.plot.size();
-state.graph.response.plot.axis.x();
-state.graph.response.plot.axis.y();
-state.graph.response.plot.plot();
+R.plotSize();
+R.plotAxisY();
+R.plotAxisX();
+R.plotLine();
 
 function drag(elem:HTMLElement,
 	posn:{x:number,y:number},
@@ -255,21 +48,21 @@ function drag(elem:HTMLElement,
 	});
 }
 
-drag(document.getElementById('floaty-bar'), state.floaty.position, function(event, x, y) {
+drag(document.getElementById('floaty-bar'), S.floaty.position, function(event, x, y) {
 	let elem = document.getElementById('floaty');
 	elem.style.left = x + 'px';
 	elem.style.top = y + 'px';
 }, function(event, posn) {});
 
-drag(document.getElementById('floaty-corner'), state.floaty.size, function(event, x, y) {
+drag(document.getElementById('floaty-corner'), S.floaty.size, function(event, x, y) {
 	let elem = document.getElementById('floaty');
 	elem.style.width = x + 'px';
 	elem.style.height = y + 'px';
-	state.graph.polezero.plot.size();
-	state.graph.polezero.plot.axis.r();
-	state.graph.polezero.plot.axis.t();
-	state.graph.polezero.plot.plot.poles();
-	state.graph.polezero.plot.plot.zeros();
+	// state.graph.polezero.plot.size();
+	// state.graph.polezero.plot.axis.r();
+	// state.graph.polezero.plot.axis.t();
+	// state.graph.polezero.plot.plot.poles();
+	// state.graph.polezero.plot.plot.zeros();
 }, function(event, posn) {
 	posn.x = Math.max(150, posn.x);
 	posn.y = Math.max(150, posn.y);
@@ -285,18 +78,18 @@ const slideTitle : Record<string, string> = {
 function slideSwitch(n:number) {
 	const container = document.getElementById('floaty-slides');
 	const slides = Array.from(container.children) as Array<HTMLElement>;
-	slides[state.floaty.slide].style.display = '';
-	state.floaty.slide = (n + slides.length) % slides.length;
-	slides[state.floaty.slide].style.display = 'unset';
+	slides[S.floaty.slide].style.display = '';
+	S.floaty.slide = (n + slides.length) % slides.length;
+	slides[S.floaty.slide].style.display = 'unset';
 	document.getElementById('floaty-title').textContent =
-		slideTitle[slides[state.floaty.slide].id];
+		slideTitle[slides[S.floaty.slide].id];
 };
 
 slideSwitch(0);
 for(let icon of [{name:'floaty-left', move:-1}, {name:'floaty-right', move:1}]) {
 	document.getElementById(icon.name).addEventListener('click', function(event) {
 		event.preventDefault();
-		slideSwitch(state.floaty.slide + icon.move);
+		slideSwitch(S.floaty.slide + icon.move);
 	});
 }
 

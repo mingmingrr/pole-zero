@@ -53,18 +53,19 @@ export function polynomial(
 export function fft(size:number,
 	real:Float64Array,
 	imag:Float64Array,
-	out:Float64Array,
 ) : void {
 	fftN(size,
 		new ArrayView((real as any), 0, 1),
 		new ArrayView((imag as any), 0, 1),
 		new ArrayView((sin as any), 0, 8192 / size),
 		new ArrayView((sin as any), 2048, 8192 / size));
-	let bits = 16 - Math.round(Math.log2(size));
-	for(let i = 0; i < out.length; ++i) {
+	// for(let i = size - 1; i >= 0; --i)
+		// [real[i], imag[i]] = [i, i];
+	let bits = 17 - Math.round(Math.log2(size));
+	for(let i = size - 1; i >= 0; --i) {
 		let j = reverse16(i) >>> bits;
-		out[out.length - 1 - i] =
-			Math.hypot(real[j], imag[j]);
+		[real[i], real[j]] = [real[j], real[i]];
+		[imag[i], imag[j]] = [imag[j], imag[i]];
 	}
 }
 

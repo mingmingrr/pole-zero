@@ -1,3 +1,5 @@
+import { closeto } from './util';
+
 export class Complex {
   constructor(
     readonly real: number,
@@ -10,6 +12,10 @@ export class Polar {
     readonly mod: number,
     readonly arg: number
   ) {}
+}
+
+export function conjugates(x:Complex) : Array<Complex> {
+	return closeto(x.imag, 0) ? [x] : [x, conj(x)];
 }
 
 export function cartesian(x:Polar) : Complex {

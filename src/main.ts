@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
 
+import { drag } from './drag';
 import * as S from './state';
 import { Roots } from './state';
 import * as C from './complex';
@@ -18,43 +19,14 @@ R.plotAxisY();
 R.plotAxisX();
 R.plotLine();
 
-function drag(elem:HTMLElement,
-	posn:{x:number,y:number},
-	func:(event:MouseEvent,x:number,y:number)=>void,
-	end:(event:MouseEvent,posn:{x:number,y:number})=>void,
-) : void {
-	let listener = {
-		move: null as (event:MouseEvent)=>void,
-		up: null as (event:MouseEvent)=>void};
-	elem.addEventListener('mousedown', function(event:MouseEvent) {
-		if(listener.move !== null) return;
-		event.preventDefault();
-		posn.x -= event.clientX;
-		posn.y -= event.clientY;
-		window.addEventListener('mouseup', listener.up = function(event:MouseEvent) {
-			if(listener === null) return;
-			event.preventDefault();
-			posn.x += event.clientX;
-			posn.y += event.clientY;
-			end(event, posn);
-			window.removeEventListener('mousemove', listener.move);
-			window.removeEventListener('mouseup', listener.up);
-			listener = { move: null, up: null };
-		});
-		window.addEventListener('mousemove', listener.move = function(event) {
-			event.preventDefault();
-			func(event, posn.x + event.clientX, posn.y + event.clientY);
-		});
-	});
-}
 
-drag(document.getElementById('floaty-bar'), S.floaty.position, function(event, x, y) {
+drag(document.getElementById('floaty-bar'), S.floaty.position, (event, x, y) => {
 	let elem = document.getElementById('floaty');
 	elem.style.left = x + 'px';
 	elem.style.top = y + 'px';
-}, function(event, posn) {});
+});
 
-drag(document.getElementById('floaty-corner'), S.floaty.size, function(event, x, y) {
+drag(document.getElementById('floaty-corner'), S.floaty.size, (event, x, y) => {
 	let elem = document.getElementById('floaty');
 	elem.style.width = x + 'px';
 	elem.style.height = y + 'px';
@@ -88,6 +60,7 @@ function slideSwitch(n:number) {
 slideSwitch(0);
 for(let icon of [{name:'floaty-left', move:-1}, {name:'floaty-right', move:1}]) {
 	document.getElementById(icon.name).addEventListener('click', function(event) {
+	document.getElementById(icon.name).addEventListener('click', (event:MouseEvent) => {
 		event.preventDefault();
 		slideSwitch(S.floaty.slide + icon.move);
 	});

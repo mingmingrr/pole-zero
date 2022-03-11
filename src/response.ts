@@ -37,7 +37,7 @@ export function plotSize() {
 
 export function plotAxisX() {
 	scale.x.range([0, size.width])
-		.domain([0, S.option.resolution]);
+		.domain([0, S.option.resolution >> 1]);
 	let scalex = scale.x.copy()
 		.domain([0, S.option.frequency.value.real]);
 	axis.x.call(d3.axisBottom(scalex)
@@ -49,7 +49,7 @@ export function plotAxisY() {
 	let max = [].reduce.call(S.response.abs,
 		(x:number, y:number) => Math.max(x, y));
 	scale.y.range([size.height, 0]).domain([0, max]);
-	axis.y.call(d3.axisLeft(scale.y)
+	axis.y.call(d3.axisLeft(scale.y.nice())
 		.tickSizeInner(-size.width).tickSizeOuter(0));
 }
 

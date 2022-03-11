@@ -1,7 +1,18 @@
+export class Indexed<a> {
+	constructor(
+		public index: number,
+		public value: a,
+	) {}
+};
+
+export function makeIndexed<a>(value:a, index:number) : Indexed<a> {
+	return new Indexed(index, value);
+}
+
 export class ReprValue<a> {
 	constructor(
-		readonly repr:string,
-		readonly value:a,
+		public repr:string,
+		public value:a,
 	) {}
 }
 

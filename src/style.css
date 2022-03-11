@@ -112,14 +112,15 @@ svg .point {
 	cursor: grab;
 }
 
-svg .poles .point circle {
+svg .poles .point {
 	fill: salmon;
 }
 
-svg .zeros .point circle {
+svg .zeros .point {
 	fill: steelblue;
 }
 
 #pole-zero {
 	cursor: crosshair;
 }
+

@@ -10,6 +10,7 @@ import { rec } from './rec';
 import { calculate } from './calculator';
 import { ReprValue } from './util';
 import * as R from './response';
+import * as P from './polezero';
 
 S.calculate(S.poles);
 S.calculate(S.zeros);
@@ -19,6 +20,11 @@ R.plotAxisY();
 R.plotAxisX();
 R.plotLine();
 
+P.plotSize();
+P.plotAxisR();
+P.plotAxisT();
+P.plotPoles();
+P.plotZeros();
 
 drag(document.getElementById('floaty-bar'), S.floaty.position, (event, x, y) => {
 	let elem = document.getElementById('floaty');
@@ -30,12 +36,12 @@ drag(document.getElementById('floaty-corner'), S.floaty.size, (event, x, y) => {
 	let elem = document.getElementById('floaty');
 	elem.style.width = x + 'px';
 	elem.style.height = y + 'px';
-	// state.graph.polezero.plot.size();
-	// state.graph.polezero.plot.axis.r();
-	// state.graph.polezero.plot.axis.t();
-	// state.graph.polezero.plot.plot.poles();
-	// state.graph.polezero.plot.plot.zeros();
-}, function(event, posn) {
+	P.plotSize();
+	P.plotAxisR();
+	P.plotAxisT();
+	P.plotPoles();
+	P.plotZeros();
+}, undefined, (event, posn) => {
 	posn.x = Math.max(150, posn.x);
 	posn.y = Math.max(150, posn.y);
 });
@@ -59,12 +65,18 @@ function slideSwitch(n:number) {
 
 slideSwitch(0);
 for(let icon of [{name:'floaty-left', move:-1}, {name:'floaty-right', move:1}]) {
-	document.getElementById(icon.name).addEventListener('click', function(event) {
 	document.getElementById(icon.name).addEventListener('click', (event:MouseEvent) => {
 		event.preventDefault();
 		slideSwitch(S.floaty.slide + icon.move);
 	});
 }
+
+window.addEventListener('resize', (event:UIEvent) => {
+	R.plotSize();
+	R.plotAxisY();
+	R.plotAxisX();
+	R.plotLine();
+});
 
 function trace(...xs:any) {
 	console.log(...xs);

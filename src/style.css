@@ -95,7 +95,7 @@ svg .r-axis .tick.unit > circle {
 
 svg .r-axis .tick > text {
 	color: grey;
-	font-size: 9pt;
+	font-size: 0.8em;
 	text-anchor: middle;
 }
 

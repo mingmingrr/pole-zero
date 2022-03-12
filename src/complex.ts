@@ -5,6 +5,11 @@ export class Complex {
 		public real: number,
 		public imag: number
 	) {}
+	toString() {
+		return `${this.real.toFixed(4)} \
+			${this.imag > 0 ? '+' : '-'} \
+			${Math.abs(this.imag).toFixed(4)}i`;
+	}
 }
 
 export class Polar {
@@ -12,6 +17,10 @@ export class Polar {
 		public mod: number,
 		public arg: number
 	) {}
+	toString() {
+		return `${this.mod.toFixed(4)} \
+			e^(${this.arg.toFixed(4)}i)`;
+	}
 }
 
 export function conjugates(x:Complex) : Array<Complex> {
@@ -30,8 +39,20 @@ export function abs(x:Complex) : Complex {
 	return new Complex(Math.hypot(x.real, x.imag), 0);
 }
 
+export function angle(x:Complex) : Complex {
+	return new Complex(Math.atan2(x.imag, x.real), 0);
+}
+
 export function conj(x:Complex) : Complex {
 	return new Complex(x.real, -x.imag);
+}
+
+export function real(x:Complex) : Complex {
+	return new Complex(x.real, 0);
+}
+
+export function imag(x:Complex) : Complex {
+	return new Complex(x.imag, 0);
 }
 
 export function negate(x:Complex) : Complex {

@@ -15,9 +15,10 @@ export class ParseResult<a> {
 export type Parser<a> = (str:string, idx:number) => ParseResult<a>;
 
 // <?>
-export function label<a>(name:string, p:Parser<a>) : Parser<a> {
+export function label<a>(name:Array<string>|string, p:Parser<a>) : Parser<a> {
+	name = typeof name === 'string' ? [name] : name;
 	return recover(p, (err) => (str, idx) => {
-		throw new ParseError(err.index, [name]);
+		throw new ParseError(err.index, name as Array<string>);
 	});
 }
 

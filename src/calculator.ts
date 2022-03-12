@@ -1,7 +1,7 @@
-import { Complex } from "./complex";
-import * as C from "./complex";
-import { Parser } from "./parser";
-import * as P from "./parser";
+import { Complex } from './complex';
+import * as C from './complex';
+import { Parser } from './parser';
+import * as P from './parser';
 
 const string = (s:string) : Parser<string> => P.lexeme(P.string(s));
 
@@ -13,21 +13,22 @@ const constants : Map<string, Complex> = new Map(Object.entries({
 }));
 
 const function1 : Map<string, (x:Complex)=>Complex> = new Map(Object.entries({
-	'+':  (x) => x,
-	'-':  C.negate,
-	abs:  C.abs,
-	conj: C.conj,
-	sin:  C.sin,
-	cos:  C.cos,
-	tan:  C.tan,
-	asin: C.asin,
-	acos: C.acos,
-	atan: C.atan,
-	ln:   C.ln,
-	exp:  C.exp,
-	sqrt: C.sqrt,
-	real: (x) => new Complex(x.real, 0),
-	imag: (x) => new Complex(x.imag, 0),
+	'+':   (x) => x,
+	'-':   C.negate,
+	abs:   C.abs,
+	angle: C.angle,
+	conj:  C.conj,
+	real:  C.real,
+	imag:  C.imag,
+	sin:   C.sin,
+	cos:   C.cos,
+	tan:   C.tan,
+	asin:  C.asin,
+	acos:  C.acos,
+	atan:  C.atan,
+	ln:    C.ln,
+	exp:   C.exp,
+	sqrt:  C.sqrt,
 }));
 
 const function2 : Map<string, (x:Complex,y:Complex)=>Complex> = new Map(Object.entries({
@@ -53,13 +54,15 @@ const term : Parser<Complex> = P.choice([
 	P.map(P.filter(P.lexeme(P.identifier),
 		(n) => constants.has(n)), (n) => constants.get(n)),
 	// 1-arg function
-	P.map(P.sequence([P.lexeme(P.filter(P.identifier, (n) => function1.has(n))),
+	P.label('function', P.map(P.sequence(
+		[P.lexeme(P.filter(P.identifier, (n) => function1.has(n))),
 		string('('), P.forward(expression), string(')')]),
-		(xs) => function1.get(xs[0])(xs[2])),
+		(xs) => function1.get(xs[0])(xs[2]))),
 	// 2-arg function
-	P.map(P.sequence([P.lexeme(P.filter(P.identifier, (n) => function2.has(n))),
+	P.label('function', P.map(P.sequence(
+		[P.lexeme(P.filter(P.identifier, (n) => function2.has(n))),
 		string('('), P.forward(expression), string(','), P.forward(expression), string(')')]),
-		(xs) => function2.get(xs[0])(xs[2], xs[4])),
+		(xs) => function2.get(xs[0])(xs[2], xs[4]))),
 	// parenthesis
 	P.nth([string('('), P.lexeme(P.forward(expression)), string(')')], 1),
 ]);
@@ -70,16 +73,16 @@ const operators : Array<(p:Parser<Complex>)=>Parser<Complex>> = [
 		P.map(term, (x) => (y) => C.mul(x, y))),
 	// sign prefix
 	(term) => P.prefix(term,
-		P.map(P.regex(/([+-])/y), (r) => function1.get(r[1]))),
+		P.map(P.label(['"+"', '"-"'], P.regex(/([+-])/y)), (r) => function1.get(r[1]))),
 	// power
 	(term) => P.infixl(term,
-		P.map(P.regex(/(\^)\s*/y), (r) => function2.get(r[1]))),
+		P.map(P.label('"^"', P.regex(/(\^)\s*/y)), (r) => function2.get(r[1]))),
 	// explicit multiplication + multiplicitive terms
 	(term) => P.infixl(term,
-		P.map(P.regex(/([%*\/])\s*/y), (r) => function2.get(r[1]))),
+		P.map(P.label(['"*"', '"/"', '"%"'], P.regex(/([%*\/])\s*/y)), (r) => function2.get(r[1]))),
 	// additive terms
 	(term) => P.infixl(term,
-		P.map(P.regex(/([+\-])\s*/y), (r) => function2.get(r[1])))
+		P.map(P.label(['"+"', '"-"'], P.regex(/([+\-])\s*/y)), (r) => function2.get(r[1])))
 ];
 
 const termtop : Parser<Complex> = operators.reduce((x, f) => f(x), term);

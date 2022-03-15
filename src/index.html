@@ -2,8 +2,8 @@
 <head>
   <meta charset="utf-8">
   <title>Pole Zero Filter GUI</title>
-  <link rel="stylesheet" href="style.css">
-  <!-- <script type="text/javascript" src="vendor.js"></script> -->
+  <!-- <link rel="stylesheet" href="style.css"> -->
+  <style>@import "./style.css";</style>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
@@ -23,54 +23,80 @@
       </div>
 
       <div id="slide-poles">
-        <ul></ul>
+        <div class="scroll">
+          <ul></ul>
+        </div>
       </div>
 
       <div id="slide-zeros">
-        <ul></ul>
+        <div class="scroll">
+          <ul></ul>
+        </div>
       </div>
 
       <div id="slide-options">
-        <div>
-          <fieldset>
-            <legend>Resolution</legend>
-            <input type="number" name="resolution" min="4" step="1" value="256">
-          </fieldset>
-          <fieldset>
-            <legend>Gain</legend>
-            <input type="number" name="gain" min="0" step="any" value="1">
-          </fieldset>
-          <fieldset>
-            <legend>Frequency</legend>
-            <input type="number" name="frequency" min="0" step="any" value="1">
-          </fieldset>
-          <fieldset>
-            <legend>Axis</legend>
-            <label>
-              <input type="radio" name="axis" value="linear" checked><span>Linear</span>
-            </label>
-            <br>
-            <label>
-              <input type="radio" name="axis" value="decibel"><span>Decibel</span>
-            </label>
-            <br>
-            <label>
-              <input type="radio" name="axis" value="logarithmic"><span>Logarithmic</span>
-            </label>
-          </fieldset>
-          <fieldset>
-            <legend>Import</legend>
-            <textarea name="import" rows="2" placeholder="zeros = []&#10;poles = []"></textarea>
-          </fieldset>
-          <fieldset>
-            <legend>Export</legend>
-            <textarea name="export" rows="4" placeholder="B = []&#10;A = []&#10;zeros = []&#10;poles = []"></textarea>
-          </fieldset>
+        <div class="scroll">
+          <form name="options">
+            <fieldset>
+              <legend>Resolution</legend>
+              <input type="range" name="resolution"
+                list="resolution-list" step=1 min=2 max=12 value=8>
+              <span>256</span>
+            </fieldset>
+            <fieldset>
+              <legend>Gain</legend>
+              <input name="gain" value="1">
+              <br>
+              <span>1</span>
+            </fieldset>
+            <fieldset>
+              <legend>Frequency</legend>
+              <input name="frequency" value="1">
+              <br>
+              <span>1</span>
+            </fieldset>
+            <!-- <fieldset>
+              <legend>Axis</legend>
+              <label>
+                <input type="radio" name="axis" value="linear" checked><span>Linear</span>
+              </label>
+              <br>
+              <label>
+                <input type="radio" name="axis" value="decibel"><span>Decibel</span>
+              </label>
+              <br>
+              <label>
+                <input type="radio" name="axis" value="logarithmic"><span>Logarithmic</span>
+              </label>
+            </fieldset> -->
+            <fieldset>
+              <legend>Snap to</legend>
+              <label>
+                <input type="checkbox" name="snap" value="axis" checked>
+                <span>X-axis</span>
+              </label>
+              <br>
+              <label>
+                <input type="checkbox" name="snap" value="unit" checked>
+                <span>Unit circle</span>
+              </label>
+            </fieldset>
+            <fieldset>
+              <legend>Import</legend>
+              <textarea name="import" rows="2" placeholder="zeros = []&#10;poles = []"></textarea>
+            </fieldset>
+            <fieldset>
+              <legend>Export</legend>
+              <textarea name="export" rows="4" placeholder="B = []&#10;A = []&#10;zeros = []&#10;poles = []"></textarea>
+            </fieldset>
+          </form>
         </div>
       </div>
+
     </div>
 
     <div id="floaty-corner"></div>
   </div>
-  <script type="module" src="main.ts"></script>
+  <!-- <script type="module" src="main.ts"></script> -->
+  <script type="module">import "./main";</script>
 </body>

@@ -1,36 +1,43 @@
 body {
-	width:    100vw;
-	height:   100vh;
-	margin:   0;
+	height: 100vh;
+	margin: 0;
 	overflow: hidden;
+	width: 100vw;
+}
+
+textarea {
+	width: 100%;
+	white-space: pre;
+	overflow-wrap: normal;
+	overflow-x: auto;
 }
 
 #floaty {
-	position:       absolute;
-	left:           0px;
-	top:            0px;
-	height:         400px;
-	width:          400px;
-	min-height:     150px;
-	min-width:      160px;
-	border:         solid thin black;
-	background:     rgba(255,255,255,0.6);
-	display:        flex;
+	background: hsla(0, 0%, 100%, .6);
+	border: thin solid #000;
+	display: flex;
 	flex-direction: column;
+	height: 400px;
+	left: 0;
+	min-height: 150px;
+	min-width: 160px;
+	position: absolute;
+	top: 0;
+	width: 400px;
 }
 
 #floaty-bar {
-	cursor:           grab;
 	background-color: #ddd;
-	user-select:      none;
-	display:          flex;
-	justify-content:  space-between;
-	border-bottom:    solid thin black;
-	padding:          2px;
+	border-bottom: thin solid #000;
+	cursor: grab;
+	display: flex;
+	justify-content: space-between;
+	padding: 2px;
+	user-select: none;
 }
 
 #floaty-bar > span {
-	margin-left:  5px;
+	margin-left: 5px;
 	margin-right: 5px;
 }
 
@@ -40,51 +47,52 @@ body {
 }
 
 #floaty-slides {
-	flex:  1;
-	width: 100%;
+	flex: 1;
 	overflow: hidden;
+	width: 100%;
 }
 
 #floaty-slides > div {
 	display: none;
 }
 
-#slide-options > div {
-	height:     100%;
+#floaty-slides > div > div.scroll {
+	height: 100%;
 	overflow-y: auto;
 }
 
 #floaty-corner {
-	position:     absolute;
-	bottom:       0;
-	right:        0;
-	cursor:       se-resize;
+	border-color: transparent transparent #000;
 	border-style: solid;
 	border-width: 0 0 10px 10px;
-	border-color: transparent transparent black transparent;
+	bottom: 0;
+	cursor: se-resize;
+	position: absolute;
+	right: 0;
+}
+
+svg .tick > text {
+	user-select: none;
 }
 
 svg .tick > line {
-	stroke: lightgrey;
+	stroke: #d3d3d3;
 }
 
 svg .x-axis .tick:first-of-type > line,
-svg .y-axis .tick:first-of-type > line {
-	display: none;
-}
-
+svg .y-axis .tick:first-of-type > line,
 svg .y-axis .tick:first-of-type > text {
 	display: none;
 }
 
 svg .graph > path {
 	fill: none;
-	stroke: steelblue;
+	stroke: #4682b4;
 }
 
 svg .r-axis .tick > circle {
 	fill: none;
-	stroke: lightgrey;
+	stroke: #d3d3d3;
 	stroke-dasharray: 4;
 }
 
@@ -94,9 +102,9 @@ svg .r-axis .tick.unit > circle {
 }
 
 svg .r-axis .tick > text {
-	color: grey;
-	font-size: 0.8em;
 	text-anchor: middle;
+	color: grey;
+	font-size: .8em;
 }
 
 svg .r-axis .tick:first-of-type > text {
@@ -104,7 +112,7 @@ svg .r-axis .tick:first-of-type > text {
 }
 
 svg .t-axis .tick > line {
-	stroke: lightgrey;
+	stroke: #d3d3d3;
 	stroke-dasharray: 4;
 }
 
@@ -117,7 +125,7 @@ svg .poles .point {
 }
 
 svg .zeros .point {
-	fill: steelblue;
+	fill: #228b22;
 }
 
 #pole-zero {

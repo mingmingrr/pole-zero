@@ -3,14 +3,17 @@ import * as d3 from 'd3';
 import { drag } from './drag';
 import * as S from './state';
 import { Roots } from './state';
+import { Root } from './root';
 import * as C from './complex';
 import { Complex } from './complex';
 import { polynomial, fft } from './fft';
 import { rec } from './rec';
 import { calculate } from './calculator';
-import { ReprValue } from './util';
+import { Indexed, makeIndexed } from './util';
 import * as R from './response';
 import * as P from './polezero';
+import * as L from './list';
+import * as T from './root';
 
 S.calculate(S.poles);
 S.calculate(S.zeros);

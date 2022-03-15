@@ -2,6 +2,7 @@ import * as C from './complex';
 import { Complex } from './complex';
 import { fft, polynomial } from './fft';
 import { ReprValue } from './util';
+import { Root } from './root';
 
 export type Roots = {
 	roots:Array<ReprValue<Complex>>,

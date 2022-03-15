@@ -1,11 +1,13 @@
 import * as d3 from 'd3';
 
+import { Roots } from './state';
 import * as S from './state';
 import { ReprValue, Indexed, makeIndexed } from './util';
 import { Complex } from './complex';
 import * as C from './complex';
 import { drag } from './drag';
 import * as R from './response';
+import { Root } from './root';
 
 function trace(...xs:any) {
 	console.log(...xs);

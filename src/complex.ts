@@ -1,4 +1,5 @@
 import { closeto } from './util';
+import * as S from './state';
 
 export class Complex {
 	constructor(
@@ -6,9 +7,11 @@ export class Complex {
 		public imag: number
 	) {}
 	toString() {
-		return `${this.real.toFixed(4)} \
-			${this.imag > 0 ? '+' : '-'} \
-			${Math.abs(this.imag).toFixed(4)}i`;
+		if(this.real === 0 && this.imag === 0) return '0';
+		if(this.imag === 0) return this.real.toFixed(S.option.precision);
+		if(this.real === 0) this.imag.toFixed(S.option.precision) + 'j';
+		return `${this.real.toFixed(S.option.precision)}` +
+			`${this.imag>0 ? '+' : '-'}${Math.abs(this.imag).toFixed(S.option.precision)}j`;
 	}
 }
 
@@ -18,13 +21,15 @@ export class Polar {
 		public arg: number
 	) {}
 	toString() {
-		return `${this.mod.toFixed(4)} \
-			e^(${this.arg.toFixed(4)}i)`;
+		if(this.mod === 0) return '0';
+		if(Math.abs(this.mod - 1) < 1e-9) return `e^(${this.arg.toFixed(S.option.precision)}j)`;
+		if(this.arg === 0) return this.mod.toFixed(S.option.precision);
+		return `${this.mod.toFixed(S.option.precision)}e^(${this.arg.toFixed(S.option.precision)}j)`;
 	}
 }
 
 export function conjugates(x:Complex) : Array<Complex> {
-	return closeto(x.imag, 0) ? [x] : [x, conj(x)];
+	return Math.abs(x.imag) < 1e-9 ? [x] : [x, conj(x)];
 }
 
 export function cartesian(x:Polar) : Complex {

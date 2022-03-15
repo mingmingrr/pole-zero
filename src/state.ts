@@ -5,16 +5,19 @@ import { ReprValue } from './util';
 import { Root } from './root';
 
 export type Roots = {
-	roots:Array<ReprValue<Complex>>,
-	real:Float64Array,
-	imag:Float64Array,
+	name:  string,
+	roots: Array<Root>,
+	real:  Float64Array,
+	imag:  Float64Array,
 };
 
 export const option = {
-	frequency: new ReprValue('pi', new Complex(Math.PI, 0)),
-	gain: new ReprValue('pi', new Complex(Math.PI, 0)),
+	frequency: new Root('pi', new Complex(Math.PI, 0)),
+	gain: new Root('1', new Complex(1, 0)),
 	resolution: 256,
 	axis: 'Linear',
+	snap: { axis: true, unit: true },
+	precision: 4,
 };
 
 export const floaty = {
@@ -24,27 +27,23 @@ export const floaty = {
 };
 
 export const poles : Roots = {
-	roots: [] as Array<ReprValue<Complex>>,
+	name: 'poles',
+	roots: [ new Root('', new Complex(0, 0)) ],
 	real: new Float64Array(256),
 	imag: new Float64Array(256),
 };
 
 export const zeros : Roots = {
+	name: 'zeros',
 	roots: [
-		new ReprValue('e^(pi*i/4)', new Complex(Math.SQRT1_2, Math.SQRT1_2)),
-	] as Array<ReprValue<Complex>>,
+		new Root('e^(pi*i/4)', new Complex(Math.SQRT1_2, Math.SQRT1_2)),
+		new Root('', new Complex(0, 0)),
+	],
 	real: new Float64Array(256),
 	imag: new Float64Array(256),
 };
 
-zeros.real[0] = 1;
-zeros.real[0] = 0;
-poles.real[0] = 1;
-poles.real[0] = 0;
-
 export let response = {
-	real: new Float64Array(256),
-	imag: new Float64Array(256),
 	abs: new Float64Array(129),
 };
 

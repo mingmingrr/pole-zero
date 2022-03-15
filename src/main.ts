@@ -15,19 +15,7 @@ import * as P from './polezero';
 import * as L from './list';
 import * as T from './root';
 
-S.calculate(S.poles);
-S.calculate(S.zeros);
 
-R.plotSize();
-R.plotAxisY();
-R.plotAxisX();
-R.plotLine();
-
-P.plotSize();
-P.plotAxisR();
-P.plotAxisT();
-P.plotPoles();
-P.plotZeros();
 
 drag(document.getElementById('floaty-bar'), S.floaty.position, (event, x, y) => {
 	let elem = document.getElementById('floaty');
@@ -85,4 +73,14 @@ function trace(...xs:any) {
 	console.log(...xs);
 	return xs[xs.length - 1];
 }
+
+R.plotSize();
+R.plotAxisX();
+
+P.plotSize();
+P.plotAxisR();
+P.plotAxisT();
+
+S.recalculate.forEach((f) => f(S.poles));
+S.recalculate.forEach((f) => f(S.zeros));
 

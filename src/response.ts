@@ -24,8 +24,7 @@ export const line = d3.line<number>()
 	.x((n, i) => scale.x(i))
 	.y((n) => scale.y(n));
 
-export const path = graph.append('path')
-	.datum(S.response.abs);
+export const path = graph.append('path');
 
 export function plotSize() {
 	let width = window.innerWidth;
@@ -54,7 +53,7 @@ export function plotAxisY() {
 }
 
 export function plotLine() {
-	path.attr('d', (d) => line(d));
+	path.attr('d', line(S.response.abs));
 }
 
 S.recalculate.push((roots) => plotAxisY());

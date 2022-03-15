@@ -82,60 +82,113 @@ export function plotAxisT() {
 		}, style);
 }
 
-type IRComplex = Indexed<ReprValue<Complex>>;
+function stylePoint(point:d3.Selection<SVGGElement, Indexed<Root>, SVGGElement, any>) {
+	return point.attr('transform', ({value:{value}}) =>
+		`translate(${scale.r(value.real)}, ${-scale.r(value.imag)})`)
+}
+
+let moving = false;
+
+function dragUpdate(point:d3.Selection<SVGGElement,Indexed<Root>,any,any>,
+		roots:Roots, x:number, y:number, conj:number) {
+	let { index, value: root } = point.datum();
+	// snap
+	if(S.option.snap.axis && Math.abs(y) < 5) y = 0;
+	let abs = scale.r.invert(Math.hypot(x, y));
+	if(S.option.snap.unit && scale.r(Math.abs(abs - 1)) < 5)
+		[x, y] = [x, y].map((n) => n / abs);
+	// move
+	let moved = new Root(root.repr, new Complex(
+		scale.r.invert(x), conj * scale.r.invert(y)));
+	roots.roots[index] = new Root(moved.toString(), moved.value);
+	S.recalculate.forEach((f) => f(roots));
+}
+
+function dragStart(point:d3.Selection<SVGGElement,Indexed<Root>,any,any>,
+		roots:Roots, posn:{x:number,y:number}, conj:number) {
+	let index = point.datum().index;
+	posn.x = scale.r(roots.roots[index].value.real);
+	posn.y = conj * scale.r(roots.roots[index].value.imag);
+	moving = true;
+}
+
+function dragEnd(point:d3.Selection<SVGGElement,Indexed<Root>,any,any>,
+		roots:Roots, posn:{x:number,y:number}) {
+	if(Math.abs(posn.x) < size.width / 2 &&
+		Math.abs(posn.y) < size.height / 2) return;
+	roots.roots.splice(point.datum().index, 1);
+	S.recalculate.forEach((f) => f(roots));
+	moving = false;
+}
+
+function dragClick(point:d3.Selection<SVGGElement,Indexed<Root>,any,any>,
+		roots:Roots) {
+	let roots$ = ({ poles: S.zeros, zeros: S.poles } as
+		Record<string,Roots>)[roots.name];
+	let { index, value: root } = point.datum();
+	roots$.roots.splice(-1, 0, root);
+	roots.roots.splice(index, 1);
+	S.recalculate.forEach((f) => f(S.zeros));
+	S.recalculate.forEach((f) => f(S.poles));
+	moving = false;
+}
+
+function dragPoint(roots:S.Roots, conj:number) {
+	conj = conj ? 1 : -1;
+	let point = d3.select<SVGGElement,Indexed<Root>>(this);
+	drag(this as unknown as HTMLElement, { x: 0, y: 0 },
+		(event, x, y) => dragUpdate(point, roots, x, y, conj),
+		(event, posn) => dragStart(point, roots, posn, conj),
+		(event, posn) => dragEnd(point, roots, posn),
+		(event, posn) => dragClick(point, roots))
+}
+
+svg.on("click", function(event) {
+	if(!moving) {
+		let rect = this.getBoundingClientRect();
+		let posn = new Complex(
+			scale.r.invert(event.clientX - rect.left - size.width / 2),
+			-scale.r.invert(event.clientY - rect.top - size.height / 2));
+		S.zeros.roots.splice(-1, 0, new Root(posn.toString(), posn, null));
+		S.recalculate.forEach((f) => f(S.zeros));
+		event.preventDefault();
+	}
+	moving = false;
+});
+
+function styleGroup(
+	roots:S.Roots,
+	create:(point:d3.Selection<d3.EnterElement, Indexed<Root>, SVGGElement, any>) =>
+		d3.Selection<SVGGElement, Indexed<Root>, SVGGElement, any>,
+	group:d3.Selection<SVGGElement, Indexed<Root>, SVGGElement, any>,
+) {
+	group.selectAll('.point')
+		.data((d) => C.conjugates(d.value.value).map((x) =>
+			new Indexed(d.index, new Root(d.value.repr, x, null))))
+		.join<SVGGElement, Indexed<Root>>(
+			(enter) => stylePoint(create(enter).classed('point', true)
+				.each(function(datum, conj) { dragPoint.call(this, roots, conj); })),
+			stylePoint, (exit) => exit.remove())
+	return group;
+}
 
 export function plotRoots(
 	roots:S.Roots,
 	group:d3.Selection<SVGGElement, any, HTMLElement, any>,
-	create:(point:d3.Selection<d3.EnterElement, IRComplex, SVGGElement, any>) =>
-		d3.Selection<SVGGElement, IRComplex, SVGGElement, any>
-) : void {
-	function styleG(points:d3.Selection<d3.EnterElement, IRComplex, SVGGElement, any>) {
-		function styleP(point:d3.Selection<d3.EnterElement, IRComplex, SVGGElement, any>) {
-			return point.attr('transform', (d:IRComplex) =>
-				`translate(${scale.r(d.value.value.real)}, ${-scale.r(d.value.value.imag)})`);
-		}
-		function dragP({index,value:{repr,value}}:IRComplex, conj:number) {
-			conj = conj ? 1 : -1;
-			drag(this as unknown as HTMLElement, { x:0, y:0 }, (event, x, y) => {
-				// snap real axis
-				if(Math.abs(y) < 5) y = 0;
-				// snap unit circle
-				let abs = scale.r.invert(Math.hypot(x, y));
-				if(scale.r(Math.abs(abs - 1)) < 5)
-					[x, y] = [x, y].map((n) => n / abs);
-				let compl = new Complex(scale.r.invert(x), conj * scale.r.invert(y));
-				let polar = C.polar(compl);
-				let repr1 = repr.includes('e')
-					? `${polar.mod.toFixed(4)}e^${polar.arg.toFixed(4)}i`
-					: `${compl.real.toFixed(4)}+${compl.imag.toFixed(4)}i`;
-				roots.roots[index] = new ReprValue(repr1, compl);
-				plotRoots(roots, group, create);
-				S.calculate(roots);
-				R.plotAxisY();
-				R.plotLine();
-			}, (event, posn) => {
-				posn.x = scale.r(roots.roots[index].value.real);
-				posn.y = conj * scale.r(roots.roots[index].value.imag);
-			});
-		}
-		points.selectAll('.point')
-			.data(({index,value:{repr,value}}) => C.conjugates(value).map((value) =>
-				new Indexed(index, new ReprValue(repr, value))))
-			.join((enter:d3.Selection<d3.EnterElement, IRComplex, SVGGElement, any>) => {
-				return styleP(create(enter).classed('point', true).each(dragP));
-			}, styleP, (exit:any) => exit.remove());
-		return points;
-	}
-	group.selectAll('.pair')
-		.data(roots.roots.map(makeIndexed))
-		.join((enter:d3.Selection<d3.EnterElement, IRComplex, SVGGElement, any>) => {
-			return styleG(enter.append('g').classed('pair', true));
-		}, styleG, (exit:any) => exit.remove());
+	create:(point:d3.Selection<d3.EnterElement, Indexed<Root>, SVGGElement, any>) =>
+		d3.Selection<SVGGElement, Indexed<Root>, SVGGElement, any>
+) {
+	return group.selectAll(".pair")
+		.data(roots.roots.map(makeIndexed)
+			.filter((root) => root.value.repr !== '' && root.value.error === null))
+		.join<SVGGElement, Indexed<Root>>(
+			(enter) => styleGroup(roots, create, enter.append('g').classed('pair', true)),
+			(update) => styleGroup(roots, create, update as any), (exit) => exit.remove());
 }
 
 export function plotPoles() {
-	plotRoots(S.poles, poles, (point) => point.append('circle').attr('r', 5));
+	plotRoots(S.poles, poles, (point) => point.append('polygon')
+		.attr('points', '0 2.8,3 5,5 3,2.8 0,5 -3,3 -5,0 -2.8,-3 -5,-5 -3,-2.8 0,-5 3,-3 5'));
 }
 
 export function plotZeros() {

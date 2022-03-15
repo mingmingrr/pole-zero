@@ -30,35 +30,41 @@ export function reverse16(x:number) : number {
 }
 
 export function polynomial(
-	roots:Array<Complex>,
-	real:Float64Array,
-	imag:Float64Array,
-) : void {
-	// let real = new Float64Array{roots.length + 1};
-	// let imag = new Float64Array(roots.length + 1);
-	real[0] = 1;
-	imag[0] = 0;
-	for(let i = 0; i < roots.length; ++i)
-		for(let j = i + 1; j > 0; --j) {
-			real[j] += roots[i].real * real[j-1] - roots[i].imag * imag[j-1];
-			imag[j] += roots[i].real * imag[j-1] + roots[i].imag * real[j-1];
+	roots : Array<Complex>,
+	real? : Float64Array,
+	imag? : Float64Array,
+) : (() => Array<Complex>) {
+	let degree = roots.filter((x) => x.real != 0 || x.imag != 0).length + 1;
+	if(real === undefined) real = new Float64Array(degree);
+	if(imag === undefined) imag = new Float64Array(degree);
+	degree = 1, real[0] = 1, imag[0] = 0;
+	for(let root of roots) {
+		if(root.real === 0 && root.imag === 0) continue;
+		real[degree] = 0, imag[degree] = 0;
+		for(let i = degree; i > 0; --i) {
+			real[i] += -root.real * real[i-1] - root.imag * imag[i-1];
+			imag[i] += -root.real * imag[i-1] + root.imag * real[i-1];
 		}
-	for(let i = 0, j = roots.length; i < j; ++i, --j) {
-		[real[i], real[j]] = [real[j], real[i]];
-		[imag[i], imag[j]] = [imag[j], imag[i]];
+		degree++
 	}
+	--degree;
+	for (let i = 0; i < degree; ++i, --degree) {
+		[real[i], real[degree]] = [real[degree], real[i]];
+		[imag[i], imag[degree]] = [imag[degree], imag[i]];
+	}
+	return () => [].map.call(real as unknown as Array<number>,
+		(x:number, i:number) => new Complex(x, imag[i]));
 }
 
-// (mostly) in-place dif
 export function fft(size:number,
 	real:Float64Array,
 	imag:Float64Array,
 ) : void {
 	fftN(size,
-		new ArrayView((real as any), 0, 1),
-		new ArrayView((imag as any), 0, 1),
-		new ArrayView((sin as any), 0, 8192 / size),
-		new ArrayView((sin as any), 2048, 8192 / size));
+		new ArrayView((real as unknown as Array<number>), 0, 1),
+		new ArrayView((imag as unknown as Array<number>), 0, 1),
+		new ArrayView((sin  as unknown as Array<number>), 0, 8192 / size),
+		new ArrayView((sin  as unknown as Array<number>), 2048, 8192 / size));
 	let bits = 16 - Math.round(Math.log2(size));
 	for(let i = size - 1; i > 0; --i) {
 		let j = reverse16(i) >>> bits;

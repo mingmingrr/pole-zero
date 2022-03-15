@@ -140,3 +140,6 @@ export function plotZeros() {
 	plotRoots(S.zeros, zeros, (point) => point.append('circle').attr('r', 5));
 }
 
+S.recalculate.push((roots) => ({poles: plotPoles, zeros: plotZeros} as
+	Record<string,()=>void>)[roots.name]());
+

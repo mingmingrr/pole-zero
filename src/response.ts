@@ -57,3 +57,6 @@ export function plotLine() {
 	path.attr('d', (d) => line(d));
 }
 
+S.recalculate.push((roots) => plotAxisY());
+S.recalculate.push((roots) => plotLine());
+

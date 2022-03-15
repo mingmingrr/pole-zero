@@ -54,14 +54,11 @@ export function calculate(values:Roots) : void {
 		values.real, values.imag);
 	fft(option.resolution,
 		values.real, values.imag);
-	for(let i = option.resolution >> 1, j = 0; i >= 0; --i, --j) {
-		let x = C.mul(new Complex(1 / Math.PI, 0),
-			C.mul(option.gain.value, C.mul(
-				new Complex(zeros.real[j], zeros.imag[j]),
-				new Complex(poles.real[j], poles.imag[j]))));
-		response.abs[i] = Math.hypot(
-			response.real[j] = x.real, response.imag[j] = x.imag);
-		if(j == 0) j = option.resolution;
-	}
+	for(let i = option.resolution >> 1; i >= 0; --i)
+		response.abs[i] = C.abs(
+			C.mul(option.gain.value, C.div(
+				new Complex(zeros.real[i], zeros.imag[i]),
+				new Complex(poles.real[i], poles.imag[i])) )).real;
 };
 
+export const recalculate : Array<(r:Roots)=>void> = [ calculate ];

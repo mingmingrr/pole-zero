@@ -7,13 +7,11 @@ import { Root } from './root';
 import * as C from './complex';
 import { Complex } from './complex';
 import { polynomial, fft } from './fft';
-import { rec } from './rec';
 import { calculate } from './calculator';
 import { Indexed, makeIndexed } from './util';
 
 import * as R from './response';
 import * as P from './polezero';
-import * as L from './list';
 import * as T from './root';
 
 (window as any).S = S;

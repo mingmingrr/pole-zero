@@ -19,11 +19,11 @@ export class ParseError {
 	constructor(
 		readonly hints:Heap<ParseHint>,
 	) {}
-	[Symbol.iterator]() {
+	[Symbol.iterator]() : Generator<ParseHint> {
 		return flatten(this.hints);
 	}
-	last() {
-		let result = { index: 0, hints: new Set() };
+	last() : { index: number, hints: Set<string> } {
+		let result = { index: 0, hints: new Set() as Set<string> };
 		for(let hint of this) {
 			if(Number.isNaN(hint.index)) continue;
 			if(result.index < hint.index)
@@ -33,7 +33,7 @@ export class ParseError {
 		}
 		return result;
 	}
-	message() {
+	message() : string {
 		let { index, hints: hints$ } = this.last();
 		let hints = Array.from(hints$);
 		switch(hints.length) {

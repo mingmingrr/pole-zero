@@ -1,4 +1,3 @@
-import { closeto } from './util';
 import * as S from './state';
 
 export class Complex {

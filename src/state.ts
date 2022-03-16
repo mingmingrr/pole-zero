@@ -1,3 +1,5 @@
+import * as d3 from 'd3';
+
 import * as C from './complex';
 import { Complex } from './complex';
 import { fft, polynomial } from './fft';
@@ -14,7 +16,12 @@ export const option = {
 	frequency: new Root('pi', new Complex(Math.PI, 0)),
 	gain: new Root('1', new Complex(1, 0)),
 	resolution: 1024,
-	axis: 'Linear',
+	scale: {
+		axis: d3.scaleLinear().clamp(true),
+		data: (x:number) => x,
+		extent: ([min, max]:Array<number>, gain:number) =>
+			[0, Math.min(max + 1e-6 * gain, 1e6 * gain)],
+	},
 	snap: { axis: true, unit: true },
 	precision: 4,
 };
@@ -41,6 +48,7 @@ export const zeros : Roots = {
 
 export let response = {
 	abs: new Float64Array(513),
+	scaled: new Float64Array(513),
 };
 
 export function calculate(values:Roots) : void {
@@ -50,11 +58,13 @@ export function calculate(values:Roots) : void {
 		values.real, values.imag);
 	fft(option.resolution,
 		values.real, values.imag);
-	for(let i = option.resolution >> 1; i >= 0; --i)
+	for(let i = option.resolution >> 1; i >= 0; --i) {
 		response.abs[i] = C.abs(
 			C.mul(option.gain.value, C.div(
 				new Complex(zeros.real[i], zeros.imag[i]),
 				new Complex(poles.real[i], poles.imag[i])) )).real;
+		response.scaled[i] = option.scale.data(response.abs[i]);
+	}
 };
 
 export const recalculate : Array<(r:Roots)=>void> = [ calculate ];

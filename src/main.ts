@@ -18,11 +18,6 @@ import * as T from './root';
 
 (window as any).S = S;
 
-function trace(...xs:any) {
-	console.log(...xs);
-	return xs[xs.length - 1];
-}
-
 drag(document.getElementById('floaty-bar'), S.floaty.position, (event, x, y) => {
 	let elem = document.getElementById('floaty');
 	elem.style.left = x + 'px';
@@ -77,6 +72,33 @@ window.addEventListener('resize', (event:UIEvent) => {
 
 let forms = document.forms.namedItem('options');
 
+(forms.elements.namedItem('axis') as RadioNodeList) .forEach((node) => {
+	let button = node as HTMLInputElement;
+	button.addEventListener('change', (event:InputEvent) => {
+		switch(button.value) {
+			case 'linear':
+				S.option.scale.axis = d3.scaleLinear().clamp(true);
+				S.option.scale.data = (x) => x;
+				S.option.scale.extent = ([x, y], z) =>
+					[0, Math.min(y + 1e-6 * z, 1e6 * z)];
+				break;
+			case 'logarithmic':
+				S.option.scale.axis = d3.scaleLog().clamp(true);
+				S.option.scale.data = (x) => x;
+				S.option.scale.extent = ([x, y], z) =>
+					[Math.max(x - 1e-6 * z, 1e-6 * z), Math.min(y + 1e-6 * z, 1e6 * z)];
+				break;
+			case 'decibel':
+				S.option.scale.axis = d3.scaleLinear().clamp(true);
+				S.option.scale.data = (d) => 10 * Math.log10(d);
+				S.option.scale.extent = ([x, y], z) =>
+					[Math.max(x - 1, z - 60), Math.min(y + 1, z + 60)];
+				break;
+		}
+		S.recalculate.forEach((f) => f(S.zeros));
+	});
+});
+
 (forms.elements.namedItem('import') as HTMLInputElement)
 	.addEventListener('change', (event:InputEvent) => {
 		let target = event.target as HTMLInputElement;
@@ -110,6 +132,7 @@ let forms = document.forms.namedItem('options');
 		S.zeros.real = new Float64Array(value);
 		S.zeros.imag = new Float64Array(value);
 		S.response.abs = new Float64Array(1 + (value >> 1));
+		S.response.scaled = new Float64Array(1 + (value >> 1));
 		R.plotAxisX();
 		S.recalculate.forEach((f) => f(S.poles));
 		S.recalculate.forEach((f) => f(S.zeros));

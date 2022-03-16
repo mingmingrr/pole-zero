@@ -9,11 +9,6 @@ import { drag } from './drag';
 import * as R from './response';
 import { Root } from './root';
 
-function trace(...xs:any) {
-	console.log(...xs);
-	return xs[xs.length - 1];
-}
-
 export const size = { width: 500, height: 300, diameter: 300 };
 export const margin = { top: 0, right: 0, bottom: 0, left: 0 };
 
@@ -22,11 +17,8 @@ export const scale = {
 	t: d3.scaleLinear().range([0, 360]).domain([0, 360]),
 };
 
-export const svg = d3.select('#pole-zero').append('svg')
-	.attr('width', 570).attr('height', 350);
-
-export const graph = svg.append('g').classed('graph', true)
-	.attr('transform', `translate(30, 20)`);
+export const svg = d3.select('#pole-zero').append('svg');
+export const graph = svg.append('g').classed('graph', true);
 
 export const axis = {
 	r: graph.append('g').classed('r-axis', true),

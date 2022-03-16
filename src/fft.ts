@@ -17,9 +17,11 @@ class ArrayView<a> {
 			this.step * step); }
 }
 
-export const sin = new Float64Array(8192);
-for(let i = 0; i < 8192; ++i)
-	sin[i] = Math.sin(Math.PI * (i / 4096));
+// console.time('sin lut');
+export const sin = new Float64Array(65536);
+for(let i = 0; i < sin.length; ++i)
+	sin[i] = Math.sin(2 * Math.PI * i / sin.length);
+// console.timeEnd('sin lut');
 
 export function reverse16(x:number) : number {
 	x = (x & 0x55555555) << 1 | (x & 0xAAAAAAAA) >> 1;
@@ -60,11 +62,12 @@ export function fft(size:number,
 	real:Float64Array,
 	imag:Float64Array,
 ) : void {
+	// console.time('fft');
 	fftN(size,
 		new ArrayView((real as unknown as Array<number>), 0, 1),
 		new ArrayView((imag as unknown as Array<number>), 0, 1),
-		new ArrayView((sin  as unknown as Array<number>), 0, 8192 / size),
-		new ArrayView((sin  as unknown as Array<number>), 2048, 8192 / size));
+		new ArrayView((sin  as unknown as Array<number>), 0, sin.length / size),
+		new ArrayView((sin  as unknown as Array<number>), sin.length / 4, sin.length / size));
 	let bits = 16 - Math.round(Math.log2(size));
 	for(let i = size - 1; i > 0; --i) {
 		let j = reverse16(i) >>> bits;
@@ -72,6 +75,7 @@ export function fft(size:number,
 			[real[i], imag[i], real[j], imag[j]] =
 				[real[j], imag[j], real[i], imag[i]];
 	}
+	// console.timeEnd('fft');
 }
 
 export function fft4(real:ArrayView<number>, imag:ArrayView<number>) : void {

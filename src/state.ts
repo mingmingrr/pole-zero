@@ -13,7 +13,7 @@ export type Roots = {
 export const option = {
 	frequency: new Root('pi', new Complex(Math.PI, 0)),
 	gain: new Root('1', new Complex(1, 0)),
-	resolution: 256,
+	resolution: 1024,
 	axis: 'Linear',
 	snap: { axis: true, unit: true },
 	precision: 4,
@@ -28,22 +28,19 @@ export const floaty = {
 export const poles : Roots = {
 	name: 'poles',
 	roots: [ new Root('', new Complex(0, 0)) ],
-	real: new Float64Array(256),
-	imag: new Float64Array(256),
+	real: new Float64Array(1024),
+	imag: new Float64Array(1024),
 };
 
 export const zeros : Roots = {
 	name: 'zeros',
-	roots: [
-		new Root('e^(pi*i/4)', new Complex(Math.SQRT1_2, Math.SQRT1_2)),
-		new Root('', new Complex(0, 0)),
-	],
-	real: new Float64Array(256),
-	imag: new Float64Array(256),
+	roots: [ new Root('', new Complex(0, 0)) ],
+	real: new Float64Array(1024),
+	imag: new Float64Array(1024),
 };
 
 export let response = {
-	abs: new Float64Array(129),
+	abs: new Float64Array(513),
 };
 
 export function calculate(values:Roots) : void {

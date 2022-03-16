@@ -6,12 +6,14 @@ import { Roots } from './state';
 import { Root } from './root';
 import * as C from './complex';
 import { Complex } from './complex';
-import { polynomial, fft } from './fft';
-import { calculate } from './calculator';
+import { polynomial } from './fft';
+import * as P from './parser';
+import { Parser } from './parser';
+import { expression, importExprs } from './calculator';
 import { Indexed, makeIndexed } from './util';
 
 import * as R from './response';
-import * as P from './polezero';
+import * as PZ from './polezero';
 import * as T from './root';
 
 (window as any).S = S;
@@ -31,11 +33,11 @@ drag(document.getElementById('floaty-corner'), S.floaty.size, (event, x, y) => {
 	let elem = document.getElementById('floaty');
 	elem.style.width = x + 'px';
 	elem.style.height = y + 'px';
-	P.plotSize();
-	P.plotAxisR();
-	P.plotAxisT();
-	P.plotPoles();
-	P.plotZeros();
+	PZ.plotSize();
+	PZ.plotAxisR();
+	PZ.plotAxisT();
+	PZ.plotPoles();
+	PZ.plotZeros();
 }, undefined, (event, posn) => {
 	posn.x = Math.max(150, posn.x);
 	posn.y = Math.max(150, posn.y);
@@ -75,6 +77,28 @@ window.addEventListener('resize', (event:UIEvent) => {
 
 let forms = document.forms.namedItem('options');
 
+(forms.elements.namedItem('import') as HTMLInputElement)
+	.addEventListener('change', (event:InputEvent) => {
+		let target = event.target as HTMLInputElement;
+		let message = target.parentElement.querySelector('span');
+		let result : Record<string,Array<Root>>;
+		try {
+			result = P.parse(importExprs, target.value);
+		} catch(err) {
+			if(!(err instanceof P.ParseError)) throw err;
+			message.textContent = err.message();
+			return;
+		}
+		message.textContent = '';
+		for(let name of ['poles', 'zeros']) {
+			if(result[name] === null) continue;
+			result[name].push(new Root('', new Complex(0, 0)));
+			let roots = ({poles:S.poles, zeros:S.zeros} as Record<string,Roots>)[name];
+			roots.roots = result[name];
+			S.recalculate.forEach((f) => f(roots));
+		}
+	});
+
 (forms.elements.namedItem('resolution') as HTMLInputElement)
 	.addEventListener('input', (event:InputEvent) => {
 		let target = event.target as HTMLInputElement;
@@ -113,14 +137,16 @@ for(let snap of (forms.elements.namedItem('snap') as unknown as Array<HTMLInputE
 		S.option.snap[snap.value as keyof typeof S.option.snap] = snap.checked;
 	});
 
-S.recalculate.push(function(roots) {
+S.recalculate.push(function(roots:Roots) {
 	let target = forms.elements.namedItem('export') as HTMLInputElement;
+	S.option.precision = 8;
 	let zs = S.zeros.roots.map((r) => C.conjugates(r.value)).flat();
 	let ps = S.poles.roots.map((r) => C.conjugates(r.value)).flat();
 	let Bs = [].join.call(polynomial(zs)(), ', ');
 	let As = [].join.call(polynomial(ps)(), ', ');
 	target.value = `B = [${Bs}]\nA = [${As}]\n` +
 		`zeros = [${zs.join(', ')}]\npoles = [${ps.join(', ')}]`
+	S.option.precision = 4;
 });
 
 S.recalculate.push(function(roots:Roots) {
@@ -153,9 +179,9 @@ S.recalculate.push(function(roots:Roots) {
 R.plotSize();
 R.plotAxisX();
 
-P.plotSize();
-P.plotAxisR();
-P.plotAxisT();
+PZ.plotSize();
+PZ.plotAxisR();
+PZ.plotAxisT();
 
 S.recalculate.forEach((f) => f(S.poles));
 S.recalculate.forEach((f) => f(S.zeros));

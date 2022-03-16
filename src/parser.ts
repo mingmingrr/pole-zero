@@ -36,11 +36,13 @@ export class ParseError {
 	message() : string {
 		let { index, hints: hints$ } = this.last();
 		let hints = Array.from(hints$);
+		let msg : string;
 		switch(hints.length) {
-			case 1: return hints[0];
-			case 2: return `${hints[0]} or ${hints[1]}`;
-			default: return `${hints.slice(0,-1).join(', ')}, or ${hints[hints.length-1]}`;
+			case 1: msg = hints[0];
+			case 2: msg = `${hints[0]} or ${hints[1]}`;
+			default: msg = `${hints.slice(0,-1).join(', ')}, or ${hints[hints.length-1]}`;
 		}
+		return `ParseError: expected ${msg} at index ${index}`;
 	}
 }
 
@@ -53,6 +55,20 @@ export class ParseResult<a> {
 }
 
 export type Parser<a> = (str:string, idx:number) => ParseResult<a>;
+
+export function parse<a>(p:Parser<a>, s:string) : a {
+	return first(p, eof)(s, 0).value;
+}
+
+// \p -> (\x p y s -> (s[x..y], p)) <$>
+//   stateOffset <*> p <*> stateOffset <*> stateInput
+export function observe<a>(p:Parser<a>) : Parser<{input:string,value:a}> {
+	return function(str, idx) {
+		let r = p(str, idx);
+		return new ParseResult(r.index,
+			{ input:str.substring(idx, r.index), value:r.value }, r.hints);
+	}
+}
 
 // <?>
 export function label<a>(name:Heap<string>, p:Parser<a>) : Parser<a> {
@@ -119,12 +135,31 @@ export function filter<a>(p:Parser<a>, f:(x:a)=>boolean) : Parser<a> {
 	}
 }
 
-// sepby1
-export function sepby<a,b>(p:Parser<a>, s:Parser<b>)
-		: Parser<{term:a, tail:Array<{sep:b, term:a}>}> {
-	return bind(p, (x) => map(many(map(then(s, p),
-		(r) => ({sep:r.x, term:r.y}))),
-		(y) => ({term:x, tail:y})));
+// pure
+export function pure<a>(x:a) : Parser<a> {
+	return function(str, idx) {
+		return new ParseResult(idx, x, []);
+	}
+}
+
+// sepby
+export function sepby<a,b>(
+	p:Parser<a>, s:Parser<b>,
+	sepby1=true, endby=false,
+) : Parser<Array<a|b>> {
+	let middle : Parser<Array<a|b>> = bind(p,
+		(x:a) => map(many(then(s, p)),
+			(ys:Array<{x:b,y:a}|null>) => {
+				let rs : Array<a|b> = [x];
+				for(let y of ys) { rs.push(y.x); rs.push(y.y); }
+				return rs;
+			}));
+	let ended : Parser<Array<a|b>> = !endby ? middle :
+		bind(middle, (xs) => map(optional(s), (y) =>
+			{ if(y !== null) xs.push(y); return xs; }));
+	let begin : Parser<Array<a|b>> = sepby1 ? ended :
+		map(optional(ended), (xs) => xs === null ? [] : xs);
+	return begin;
 }
 
 // satisfy
@@ -145,20 +180,25 @@ export function string<a>(s:string) : Parser<string> {
 }
 
 // sequence
-export function sequence(ps:Array<Parser<any>>) : Parser<Array<any>> {
-	return function(str, idx) {
-		let rs = ps.map((p) => {
-			let r = p(str, idx);
-			idx = r.index;
-			return r.value
-		});
-		return new ParseResult(idx, rs);
+export function sequence<a extends any[]>(
+	...ps:{[b in keyof a]: Parser<a[b]>}
+): Parser<a> {
+	return function(str, idx) : ParseResult<a> {
+		let xs : a = Array(ps.length) as unknown as a;
+		let hs : Array<Heap<ParseHint>> = [];
+		for(let i = 0; i < ps.length; ++i) {
+			try {
+				let r = ps[i](str, idx);
+				idx = r.index;
+				xs[i] = r.value;
+				hs.push(r.hints);
+			} catch(err) {
+				if(!(err instanceof ParseError)) throw err;
+				throw new ParseError([err.hints, hs]);
+			}
+		}
+		return new ParseResult(idx, xs, hs);
 	}
-}
-
-// flip ((!!) . sequence)
-export function nth(ps:Array<Parser<any>>, n:number) : Parser<any> {
-	return map(sequence(ps), (xs) => xs[n]);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -272,7 +312,7 @@ export function infixl<a>(term:Parser<a>, op:Parser<(x:a,y:a)=>a>) : Parser<a> {
 ////////////////////////////////////////////////////////////////////////////////
 
 export function eof(str:string, idx:number) : ParseResult<null> {
-	if(idx < str.length) throw new ParseError(new ParseHint(idx, '<EOF>'));
+	if(idx < str.length) throw new ParseError(new ParseHint(idx, 'EOF'));
 	return new ParseResult(idx, null);
 }
 

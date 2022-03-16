@@ -2,6 +2,9 @@ import { Complex } from './complex';
 import * as C from './complex';
 import { Parser } from './parser';
 import * as P from './parser';
+import { Root } from './root';
+
+export const expression : Parser<Complex> = P.forward(expressionP);
 
 const string = (s:string) : Parser<string> => P.lexeme(P.string(s));
 
@@ -55,16 +58,16 @@ const term : Parser<Complex> = P.choice([
 		(n) => constants.has(n)), (n) => constants.get(n)),
 	// 1-arg function
 	P.label('function', P.map(P.sequence(
-		[P.lexeme(P.filter(P.identifier, (n) => function1.has(n))),
-		string('('), P.forward(expression), string(')')]),
+		P.lexeme(P.filter(P.identifier, (n) => function1.has(n))),
+		string('('), expression, string(')')),
 		(xs) => function1.get(xs[0])(xs[2]))),
 	// 2-arg function
 	P.label('function', P.map(P.sequence(
-		[P.lexeme(P.filter(P.identifier, (n) => function2.has(n))),
-		string('('), P.forward(expression), string(','), P.forward(expression), string(')')]),
+		P.lexeme(P.filter(P.identifier, (n) => function2.has(n))),
+		string('('), expression, string(','), expression, string(')')),
 		(xs) => function2.get(xs[0])(xs[2], xs[4]))),
 	// parenthesis
-	P.nth([string('('), P.lexeme(P.forward(expression)), string(')')], 1),
+	P.map(P.sequence(string('('), P.lexeme(expression), string(')')), (xs) => xs[1]),
 ]);
 
 const operators : Array<(p:Parser<Complex>)=>Parser<Complex>> = [
@@ -87,8 +90,33 @@ const operators : Array<(p:Parser<Complex>)=>Parser<Complex>> = [
 
 const termtop : Parser<Complex> = operators.reduce((x, f) => f(x), term);
 
-function expression() : Parser<Complex> { return termtop; }
+function expressionP() : Parser<Complex> { return termtop; }
 
-export const calculate : (x:string) => Complex =
-	(x) => P.first(expression(), P.eof)(x, 0).value;
+export const importExprs : Parser<Record<string,Array<Root>>> = P.forward(() => {
+	let header : Parser<RegExpExecArray> =
+		P.label(['"poles = ["','"zeros = ["'],
+			P.regex(/\s*(poles|zeros)\s*=\s*\[\s*/y));
+	let exprs : Parser<Array<Root>> =
+		P.map(P.sepby(P.observe(expression), P.lexeme(P.string(',')), false, true),
+			(xs) => xs.filter((x, i) => i % 2 == 0)
+				.map((x:{input:string,value:Complex}) => new Root(x.input, x.value)));
+	let footer : Parser<RegExpExecArray> =
+		P.label('"]"', P.regex(/\][ \t]*/y));
+	let parser : Parser<Array<RegExpExecArray|
+		{type:string,value:Array<Root>}>> = P.sepby(
+			P.map(P.sequence(header, exprs, footer),
+				(xs) => ({ type: xs[0][1], value: xs[1] })),
+			P.label(['newline', '";"'], P.regex(/[\n;]+\s*/y)),
+			false, true);
+	function collate(rs:Array<RegExpExecArray|{type:string,value:Array<Root>}>) {
+		let result : Record<string,Array<Root>> =
+			{ poles: null, zeros: null };
+		for(let i = 0; i < rs.length; i += 2) {
+			let {type, value} = rs[i] as {type:string, value:Array<Root>};
+			result[type] = value;
+		}
+		return result;
+	}
+	return P.map(parser, collate);
+});
 

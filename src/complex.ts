@@ -6,9 +6,9 @@ export class Complex {
 		public imag: number
 	) {}
 	toString() {
-		if(this.real === 0 && this.imag === 0) return '0';
-		if(this.imag === 0) return this.real.toFixed(S.option.precision);
-		if(this.real === 0) this.imag.toFixed(S.option.precision) + 'j';
+		if(Math.abs(this.real) < 1e-9 && Math.abs(this.imag) < 1e-9) return '0';
+		if(Math.abs(this.imag) < 1e-9) return this.real.toFixed(S.option.precision);
+		if(Math.abs(this.real) < 1e-9) this.imag.toFixed(S.option.precision) + 'j';
 		return `${this.real.toFixed(S.option.precision)}` +
 			`${this.imag>0 ? '+' : '-'}${Math.abs(this.imag).toFixed(S.option.precision)}j`;
 	}
@@ -20,9 +20,9 @@ export class Polar {
 		public arg: number
 	) {}
 	toString() {
-		if(this.mod === 0) return '0';
+		if(Math.abs(this.mod) < 1e-9) return '0';
 		if(Math.abs(this.mod - 1) < 1e-9) return `e^(${this.arg.toFixed(S.option.precision)}j)`;
-		if(this.arg === 0) return this.mod.toFixed(S.option.precision);
+		if(Math.abs(this.arg) < 1e-9) return this.mod.toFixed(S.option.precision);
 		return `${this.mod.toFixed(S.option.precision)}e^(${this.arg.toFixed(S.option.precision)}j)`;
 	}
 }

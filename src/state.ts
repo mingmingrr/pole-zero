@@ -15,7 +15,7 @@ export type Roots = {
 
 export const option = {
 	frequency: new Root('pi', new Complex(Math.PI, 0)),
-	gain: new Root('1', new Complex(1, 0)),
+	gain: new Root('1', C.one()),
 	resolution: 1024,
 	scale: {
 		axis: d3.scaleLinear().clamp(true),
@@ -24,7 +24,6 @@ export const option = {
 			[0, Math.min(max + 1e-6 * gain, 1e6 * gain)],
 	},
 	snap: { axis: true, unit: true },
-	precision: 4,
 };
 
 export const floaty = {
@@ -35,14 +34,14 @@ export const floaty = {
 
 export const poles : Roots = {
 	name: 'poles',
-	roots: [ new Root('', new Complex(0, 0)) ],
+	roots: [ new Root('', C.zero()) ],
 	real: new Float64Array(1024),
 	imag: new Float64Array(1024),
 };
 
 export const zeros : Roots = {
 	name: 'zeros',
-	roots: [ new Root('', new Complex(0, 0)) ],
+	roots: [ new Root('', C.zero()) ],
 	real: new Float64Array(1024),
 	imag: new Float64Array(1024),
 };

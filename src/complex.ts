@@ -1,4 +1,6 @@
-import * as S from './state';
+import { closeto, compare as compareN } from './util';
+
+export const precision = { value: 4 };
 
 export class Complex {
 	constructor(
@@ -6,11 +8,11 @@ export class Complex {
 		public imag: number
 	) {}
 	toString() {
-		if(Math.abs(this.real) < 1e-9 && Math.abs(this.imag) < 1e-9) return '0';
-		if(Math.abs(this.imag) < 1e-9) return this.real.toFixed(S.option.precision);
-		if(Math.abs(this.real) < 1e-9) this.imag.toFixed(S.option.precision) + 'j';
-		return `${this.real.toFixed(S.option.precision)}` +
-			`${this.imag>0 ? '+' : '-'}${Math.abs(this.imag).toFixed(S.option.precision)}j`;
+		if(isZero(this)) return '0';
+		if(closeto(this.imag, 0)) return this.real.toFixed(precision.value);
+		if(closeto(this.real, 0)) this.imag.toFixed(precision.value) + 'j';
+		return `${this.real.toFixed(precision.value)}` +
+			`${this.imag>0 ? '+' : '-'}${Math.abs(this.imag).toFixed(precision.value)}j`;
 	}
 }
 
@@ -20,15 +22,50 @@ export class Polar {
 		public arg: number
 	) {}
 	toString() {
-		if(Math.abs(this.mod) < 1e-9) return '0';
-		if(Math.abs(this.mod - 1) < 1e-9) return `e^(${this.arg.toFixed(S.option.precision)}j)`;
-		if(Math.abs(this.arg) < 1e-9) return this.mod.toFixed(S.option.precision);
-		return `${this.mod.toFixed(S.option.precision)}e^(${this.arg.toFixed(S.option.precision)}j)`;
+		if(closeto(this.mod, 0)) return '0';
+		if(closeto(this.mod, 1)) return `e^(${this.arg.toFixed(precision.value)}j)`;
+		if(closeto(this.arg, 0)) return this.mod.toFixed(precision.value);
+		return `${this.mod.toFixed(precision.value)}e^(${this.arg.toFixed(precision.value)}j)`;
 	}
 }
 
+export function zero()  { return new Complex(0, 0); }
+export function one()   { return new Complex(1, 0); }
+export function two()   { return new Complex(2, 0); }
+export function three() { return new Complex(3, 0); }
+export function four()  { return new Complex(4, 0); }
+
+export function isZero(x:Complex, eps:number=1e-9) : boolean {
+	return closeto(x.real, 0, eps) && closeto(x.imag, 0, eps);
+}
+
+export function markConjugates(xs:Array<Complex>, eps:number=1e-9) : Array<boolean> {
+	if(xs.length === 0) return [];
+	let i = 0, ys = [] as Array<boolean>;
+	while(i < xs.length - 1) {
+		ys.push(false);
+		if(isZero(sub(xs[i], conj(xs[i+1])), eps)) {
+			ys.push(true);
+			++i;
+		}
+		++i;
+	}
+	if(i == xs.length - 1)
+		ys.push(false);
+	return ys;
+}
+
+export function equal(x:Complex, y:Complex, eps:number=1e-9) : boolean {
+	return isZero(sub(x, y), eps);
+}
+
+export function compare(x:Complex, y:Complex, eps:number=1e-9) : number {
+	let r = compareN(x.real, y.real, eps);
+	return r ? r : compareN(x.imag, y.imag, eps);
+}
+
 export function conjugates(x:Complex) : Array<Complex> {
-	return Math.abs(x.imag) < 1e-9 ? [x] : [x, conj(x)];
+	return closeto(x.imag, 0) ? [x] : [x, conj(x)];
 }
 
 export function cartesian(x:Polar) : Complex {

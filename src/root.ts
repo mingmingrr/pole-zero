@@ -1,5 +1,6 @@
-import { Complex, polar } from './complex';
-import { expression } from './calculator';
+import * as C from './complex';
+import { Complex } from './complex';
+import { root as rootP } from './calculator';
 import { parse, ParseError } from './parser';
 
 export class Root {
@@ -12,7 +13,7 @@ export class Root {
 		if(this.error !== null)
 			return this.error;
 		if(/e\^|exp/.test(this.repr))
-			return polar(this.value).toString()
+			return C.polar(this.value).toString()
 		return this.value.toString()
 	}
 }
@@ -31,14 +32,14 @@ export function create(root:Root, node:HTMLElement,
 	repr.addEventListener('change', function(event:InputEvent) {
 		event.preventDefault();
 		try {
-			let root = new Root(repr.value, parse(expression, repr.value), null);
+			let root = parse(rootP, repr.value);
 			node.querySelector('span').textContent = root.toString();
 			return onchange(event, root, node);
 		} catch(err) {
 			if (!(err instanceof ParseError)) throw err;
 			let message = err.message();
 			node.querySelector('span').textContent = message;
-			return onchange(event, new Root(repr.value, new Complex(0, 0), message), node);
+			return onchange(event, new Root(repr.value, C.zero(), message), node);
 		}
 	});
 	render(root, node);

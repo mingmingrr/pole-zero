@@ -114,7 +114,7 @@ let forms = document.forms.namedItem('options');
 		message.textContent = '';
 		for(let name of ['poles', 'zeros']) {
 			if(result[name] === null) continue;
-			result[name].push(new Root('', new Complex(0, 0)));
+			result[name].push(new Root('', C.zero()));
 			let roots = ({poles:S.poles, zeros:S.zeros} as Record<string,Roots>)[name];
 			roots.roots = result[name];
 			S.recalculate.forEach((f) => f(roots));
@@ -162,14 +162,14 @@ for(let snap of (forms.elements.namedItem('snap') as unknown as Array<HTMLInputE
 
 S.recalculate.push(function(roots:Roots) {
 	let target = forms.elements.namedItem('export') as HTMLInputElement;
-	S.option.precision = 8;
+	C.precision.value = 8;
 	let zs = S.zeros.roots.slice(0, -1).map((r) => C.conjugates(r.value)).flat();
 	let ps = S.poles.roots.slice(0, -1).map((r) => C.conjugates(r.value)).flat();
 	let Bs = [].join.call(fromRoots(zs), ', ');
 	let As = [].join.call(fromRoots(ps), ', ');
 	target.value = `B = [${Bs}]\nA = [${As}]\n` +
 		`zeros = [${zs.join(', ')}]\npoles = [${ps.join(', ')}]`
-	S.option.precision = 4;
+	C.precision.value = 4;
 });
 
 S.recalculate.push(function(roots:Roots) {
@@ -183,7 +183,7 @@ S.recalculate.push(function(roots:Roots) {
 		let index = d3.select<HTMLElement,Indexed<Root>>(node).datum().index;
 		roots.roots[index] = root;
 		if(roots.roots.length - 1 === index && root.repr !== '' && root.error === null)
-			roots.roots.push(new Root("", new Complex(0, 0)));
+			roots.roots.push(new Root('', C.zero()));
 		if(root.repr === '')
 			roots.roots.splice(index, 1);
 		S.recalculate.forEach((f) => f(roots));

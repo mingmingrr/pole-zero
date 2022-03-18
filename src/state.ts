@@ -2,7 +2,8 @@ import * as d3 from 'd3';
 
 import * as C from './complex';
 import { Complex } from './complex';
-import { fft, polynomial } from './fft';
+import { fft } from './fft';
+import { fromRoots } from './polynomial';
 import { Root } from './root';
 
 export type Roots = {
@@ -54,8 +55,12 @@ export let response = {
 export function calculate(values:Roots) : void {
 	values.real.fill(0);
 	values.imag.fill(0);
-	polynomial(values.roots.map((x) => C.conjugates(x.value)).flat(),
-		values.real, values.imag);
+	let poly = fromRoots(values.roots.map(
+		(x) => C.conjugates(x.value)).flat());
+	for(let i = 0; i < poly.length; ++i) {
+		values.real[i] = poly[i].real;
+		values.imag[i] = poly[i].imag;
+	}
 	fft(option.resolution,
 		values.real, values.imag);
 	for(let i = option.resolution >> 1; i >= 0; --i) {

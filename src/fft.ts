@@ -31,33 +31,6 @@ export function reverse16(x:number) : number {
 	return x;
 }
 
-export function polynomial(
-	roots : Array<Complex>,
-	real? : Float64Array,
-	imag? : Float64Array,
-) : (() => Array<Complex>) {
-	let degree = roots.filter((x) => x.real != 0 || x.imag != 0).length + 1;
-	if(real === undefined) real = new Float64Array(degree);
-	if(imag === undefined) imag = new Float64Array(degree);
-	degree = 1, real[0] = 1, imag[0] = 0;
-	for(let root of roots) {
-		if(root.real === 0 && root.imag === 0) continue;
-		real[degree] = 0, imag[degree] = 0;
-		for(let i = degree; i > 0; --i) {
-			real[i] += -root.real * real[i-1] - root.imag * imag[i-1];
-			imag[i] += -root.real * imag[i-1] + root.imag * real[i-1];
-		}
-		degree++
-	}
-	--degree;
-	for (let i = 0; i < degree; ++i, --degree) {
-		[real[i], real[degree]] = [real[degree], real[i]];
-		[imag[i], imag[degree]] = [imag[degree], imag[i]];
-	}
-	return () => [].map.call(real as unknown as Array<number>,
-		(x:number, i:number) => new Complex(x, imag[i]));
-}
-
 export function fft(size:number,
 	real:Float64Array,
 	imag:Float64Array,

@@ -6,7 +6,7 @@ import { Roots } from './state';
 import { Root } from './root';
 import * as C from './complex';
 import { Complex } from './complex';
-import { polynomial } from './fft';
+import { fromRoots } from './polynomial';
 import * as P from './parser';
 import { Parser } from './parser';
 import { expression, importExprs } from './calculator';
@@ -163,10 +163,10 @@ for(let snap of (forms.elements.namedItem('snap') as unknown as Array<HTMLInputE
 S.recalculate.push(function(roots:Roots) {
 	let target = forms.elements.namedItem('export') as HTMLInputElement;
 	S.option.precision = 8;
-	let zs = S.zeros.roots.map((r) => C.conjugates(r.value)).flat();
-	let ps = S.poles.roots.map((r) => C.conjugates(r.value)).flat();
-	let Bs = [].join.call(polynomial(zs)(), ', ');
-	let As = [].join.call(polynomial(ps)(), ', ');
+	let zs = S.zeros.roots.slice(0, -1).map((r) => C.conjugates(r.value)).flat();
+	let ps = S.poles.roots.slice(0, -1).map((r) => C.conjugates(r.value)).flat();
+	let Bs = [].join.call(fromRoots(zs), ', ');
+	let As = [].join.call(fromRoots(ps), ', ');
 	target.value = `B = [${Bs}]\nA = [${As}]\n` +
 		`zeros = [${zs.join(', ')}]\npoles = [${ps.join(', ')}]`
 	S.option.precision = 4;

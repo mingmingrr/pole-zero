@@ -9,7 +9,7 @@ import { Complex } from './complex';
 import { fromRoots } from './polynomial';
 import * as P from './parser';
 import { Parser } from './parser';
-import { expression, importExprs } from './calculator';
+import { importExprs } from './calculator';
 import { Indexed, makeIndexed } from './util';
 
 import * as R from './response';

@@ -162,6 +162,15 @@ export function sepby<a,b>(
 	return begin;
 }
 
+// sepby
+export function sepby$<a,b>(
+	p:Parser<a>, s:Parser<b>,
+	sepby1=true, endby=false,
+) : Parser<Array<a>> {
+	return map(sepby(p, s, sepby1, endby),
+		(xs:Array<a>) => xs.filter((x, i) => (i % 2) == 0));
+}
+
 // satisfy
 export function satisfy<a>(f:(x:string)=>boolean) : Parser<string> {
 	return function(str, idx) {
